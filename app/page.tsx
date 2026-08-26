@@ -96,7 +96,7 @@ export default function Home() {
                   <figure className="milestoneMedia" key={`${item.year}-${mediaIndex}`}>
                     {media.src ? (
                       media.type === 'video' ? (
-                        <video controls playsInline preload="metadata" poster={media.poster || undefined}>
+                        <video controls playsInline preload="metadata" >
                           <source src={media.src} />
                           Trình duyệt của bạn không hỗ trợ video.
                         </video>
