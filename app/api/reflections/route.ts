@@ -1,6 +1,14 @@
 import { env } from 'cloudflare:workers';
+import { ensureReflectionsSchema } from '../../../db/reflections';
 
-type ReflectionRow = { id: string; reflected_at: string; title: string; source_type: 'photo' | 'post'; feeling: string; image_path: string | null };
+type ReflectionRow = {
+  id: string;
+  reflected_at: string;
+  title: string;
+  source_type: 'photo' | 'post';
+  feeling: string;
+  object_key: string | null;
+};
 
 function isAdmin(request: Request) {
   if (process.env.NODE_ENV === 'development') return true;
@@ -9,28 +17,13 @@ function isAdmin(request: Request) {
   return Boolean(expected && current && expected === current);
 }
 
-function supabaseConfig(admin = false) {
-  const url = process.env.SUPABASE_URL;
-  const key = admin ? process.env.SUPABASE_SECRET_KEY : process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) throw new Error('Supabase chưa được cấu hình đầy đủ.');
-  return { url, key };
-}
-
-async function supabase(path: string, init: RequestInit = {}, admin = false) {
-  const { url, key } = supabaseConfig(admin);
-  const response = await fetch(`${url}/rest/v1/${path}`, {
-    ...init,
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'content-type': 'application/json', Prefer: 'return=representation', ...(init.headers || {}) },
-    cache: 'no-store',
-  });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.message || `Supabase trả về lỗi ${response.status}.`);
-  return body;
-}
-
 const publicItem = (row: ReflectionRow) => ({
-  id: row.id, reflected_at: row.reflected_at, title: row.title, source_type: row.source_type, feeling: row.feeling,
-  image_url: row.image_path ? `/api/reflections?key=${encodeURIComponent(row.image_path)}` : null,
+  id: row.id,
+  reflected_at: row.reflected_at,
+  title: row.title,
+  source_type: row.source_type,
+  feeling: row.feeling,
+  image_url: row.object_key ? `/api/reflections?key=${encodeURIComponent(row.object_key)}` : null,
 });
 
 export async function GET(request: Request) {
@@ -42,36 +35,45 @@ export async function GET(request: Request) {
       if (!object) return new Response('Không tìm thấy ảnh.', { status: 404 });
       return new Response(object.body, { headers: { 'content-type': object.httpMetadata?.contentType || 'application/octet-stream', 'cache-control': 'public, max-age=31536000, immutable' } });
     }
-    const rows = await supabase('reflections?select=id,reflected_at,title,source_type,feeling,image_path&order=reflected_at.desc,created_at.desc') as ReflectionRow[];
-    return Response.json({ reflections: rows.map(publicItem) });
+    const db = await ensureReflectionsSchema();
+    const rows = await db.prepare('SELECT id, reflected_at, title, source_type, feeling, object_key FROM reflections ORDER BY reflected_at DESC, created_at DESC').all<ReflectionRow>();
+    return Response.json({ reflections: rows.results.map(publicItem) });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : 'Không thể tải cảm nhận.' }, { status: 502 });
+    return Response.json({ error: error instanceof Error ? error.message : 'Không thể tải cảm nhận.' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
-  let imagePath: string | null = null;
   try {
     const form = await request.formData();
     const file = form.get('file');
     const id = crypto.randomUUID();
+    const now = new Date().toISOString();
     const reflectedAt = String(form.get('reflected_at') || '');
     const title = String(form.get('title') || '').trim();
     const feeling = String(form.get('feeling') || '').trim();
     const sourceType = form.get('source_type') === 'post' ? 'post' : 'photo';
     if (!reflectedAt || !title || !feeling) return Response.json({ error: 'Vui lòng nhập đủ ngày, tiêu đề và cảm nhận.' }, { status: 400 });
+
+    let objectKey: string | null = null;
+    let originalName: string | null = null;
+    let contentType: string | null = null;
     if (file instanceof File && file.size) {
       if (!file.type.startsWith('image/')) return Response.json({ error: 'Phần 04 chỉ nhận tệp ảnh.' }, { status: 400 });
       const extension = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '')}` : '';
-      imagePath = `reflections/${id}/${crypto.randomUUID()}${extension}`;
-      await (env as unknown as { MEDIA: R2Bucket }).MEDIA.put(imagePath, file.stream(), { httpMetadata: { contentType: file.type } });
+      objectKey = `reflections/${id}/${crypto.randomUUID()}${extension}`;
+      originalName = file.name;
+      contentType = file.type;
+      await (env as unknown as { MEDIA: R2Bucket }).MEDIA.put(objectKey, file.stream(), { httpMetadata: { contentType } });
     }
-    await supabase('reflections', { method: 'POST', body: JSON.stringify({ id, reflected_at: reflectedAt, title, source_type: sourceType, feeling, image_path: imagePath }) }, true);
+
+    const db = await ensureReflectionsSchema();
+    await db.prepare('INSERT INTO reflections (id, reflected_at, title, source_type, feeling, object_key, original_name, content_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, reflectedAt, title, sourceType, feeling, objectKey, originalName, contentType, now, now).run();
     return Response.json({ created: true, id });
   } catch (error) {
-    if (imagePath) await (env as unknown as { MEDIA: R2Bucket }).MEDIA.delete(imagePath).catch(() => undefined);
-    return Response.json({ error: error instanceof Error ? error.message : 'Không thể thêm cảm nhận.' }, { status: 502 });
+    return Response.json({ error: error instanceof Error ? error.message : 'Không thể thêm cảm nhận.' }, { status: 500 });
   }
 }
 
@@ -80,10 +82,12 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json() as { id?: string; reflected_at?: string; title?: string; source_type?: string; feeling?: string };
     if (!body.id || !body.reflected_at || !body.title || !body.feeling) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
-    await supabase(`reflections?id=eq.${encodeURIComponent(body.id)}`, { method: 'PATCH', body: JSON.stringify({ reflected_at: body.reflected_at, title: body.title.trim(), source_type: body.source_type === 'post' ? 'post' : 'photo', feeling: body.feeling.trim(), updated_at: new Date().toISOString() }) }, true);
+    const db = await ensureReflectionsSchema();
+    await db.prepare('UPDATE reflections SET reflected_at = ?, title = ?, source_type = ?, feeling = ?, updated_at = ? WHERE id = ?')
+      .bind(body.reflected_at, body.title.trim(), body.source_type === 'post' ? 'post' : 'photo', body.feeling.trim(), new Date().toISOString(), body.id).run();
     return Response.json({ updated: true });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : 'Không thể cập nhật cảm nhận.' }, { status: 502 });
+    return Response.json({ error: error instanceof Error ? error.message : 'Không thể cập nhật cảm nhận.' }, { status: 500 });
   }
 }
 
@@ -92,11 +96,12 @@ export async function DELETE(request: Request) {
   try {
     const { id } = await request.json() as { id?: string };
     if (!id) return Response.json({ error: 'Thiếu mã cảm nhận.' }, { status: 400 });
-    const rows = await supabase(`reflections?id=eq.${encodeURIComponent(id)}&select=image_path`, { method: 'GET' }, true) as Array<{ image_path: string | null }>;
-    await supabase(`reflections?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }, true);
-    if (rows[0]?.image_path?.startsWith('reflections/')) await (env as unknown as { MEDIA: R2Bucket }).MEDIA.delete(rows[0].image_path);
+    const db = await ensureReflectionsSchema();
+    const row = await db.prepare('SELECT object_key FROM reflections WHERE id = ?').bind(id).first<{ object_key: string | null }>();
+    if (row?.object_key) await (env as unknown as { MEDIA: R2Bucket }).MEDIA.delete(row.object_key);
+    await db.prepare('DELETE FROM reflections WHERE id = ?').bind(id).run();
     return Response.json({ deleted: true });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : 'Không thể xóa cảm nhận.' }, { status: 502 });
+    return Response.json({ error: error instanceof Error ? error.message : 'Không thể xóa cảm nhận.' }, { status: 500 });
   }
 }
