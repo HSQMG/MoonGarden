@@ -1,7 +1,9 @@
 import { env } from 'cloudflare:workers';
+import { ensureMediaSchema } from '../../../db/media';
 
 const bucket = () => (env as unknown as { MEDIA: R2Bucket }).MEDIA;
 const validTrip = (value: string | null) => value !== null && /^[0-2]$/.test(value);
+type MediaRow = { id: string; trip_index: number; object_key: string; original_name: string; content_type: string; size_bytes: number; created_at: string };
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -18,17 +20,35 @@ export async function GET(request: Request) {
     return new Response(object.body, { headers });
   }
 
+  const db = await ensureMediaSchema();
   const objects = await bucket().list({ prefix: 'friend-trips/', include: ['httpMetadata'] });
-  const media = objects.objects.map((object) => {
-    const tripIndex = Number(object.key.split('/')[1]);
-    const contentType = object.httpMetadata?.contentType || '';
-    return {
-      key: object.key,
-      tripIndex,
-      type: contentType.startsWith('video/') ? 'video' : 'image',
-      url: `/api/trip-media?key=${encodeURIComponent(object.key)}`,
-    };
-  });
+  if (objects.objects.length) {
+    await db.batch(objects.objects.map((object) => {
+      const tripIndex = Number(object.key.split('/')[1]);
+      const contentType = object.httpMetadata?.contentType || 'application/octet-stream';
+      const originalName = object.key.split('/').at(-1)?.replace(/^\d+-\d+-/, '') || 'media';
+      return db.prepare(`
+        INSERT INTO trip_media (id, trip_index, object_key, original_name, content_type, size_bytes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(object_key) DO NOTHING
+      `).bind(crypto.randomUUID(), tripIndex, object.key, originalName, contentType, object.size, object.uploaded.toISOString());
+    }));
+  }
+  const result = await db.prepare(`
+    SELECT id, trip_index, object_key, original_name, content_type, size_bytes, created_at
+    FROM trip_media
+    ORDER BY trip_index ASC, created_at ASC
+  `).all<MediaRow>();
+  const media = result.results.map((row) => ({
+    id: row.id,
+    key: row.object_key,
+    tripIndex: row.trip_index,
+    type: row.content_type.startsWith('video/') ? 'video' : 'image',
+    name: row.original_name,
+    size: row.size_bytes,
+    createdAt: row.created_at,
+    url: `/api/trip-media?key=${encodeURIComponent(row.object_key)}`,
+  }));
   return Response.json({ media });
 }
 
@@ -51,11 +71,23 @@ export async function POST(request: Request) {
   }
 
   const uploaded = [];
+  const db = await ensureMediaSchema();
   for (const [index, file] of files.entries()) {
     const safeName = file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-');
     const key = `friend-trips/${tripIndex}/${Date.now()}-${index}-${safeName}`;
     await bucket().put(key, file.stream(), { httpMetadata: { contentType: file.type } });
-    uploaded.push({ key, tripIndex: Number(tripIndex), type: file.type.startsWith('video/') ? 'video' : 'image', url: `/api/trip-media?key=${encodeURIComponent(key)}` });
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    try {
+      await db.prepare(`
+        INSERT INTO trip_media (id, trip_index, object_key, original_name, content_type, size_bytes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(id, Number(tripIndex), key, file.name, file.type, file.size, createdAt).run();
+    } catch (error) {
+      await bucket().delete(key);
+      throw error;
+    }
+    uploaded.push({ id, key, tripIndex: Number(tripIndex), type: file.type.startsWith('video/') ? 'video' : 'image', name: file.name, size: file.size, createdAt, url: `/api/trip-media?key=${encodeURIComponent(key)}` });
   }
 
   return Response.json({ media: uploaded });

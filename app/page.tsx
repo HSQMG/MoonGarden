@@ -82,6 +82,7 @@ export default function Home() {
     setTripMedia(grouped);
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadMedia(); }, []);
 
   const uploadMedia = async (tripIndex: number, files: FileList | null) => {
