@@ -2,8 +2,18 @@ import { env } from 'cloudflare:workers';
 import { ensureMediaSchema } from '../../../db/media';
 
 const bucket = () => (env as unknown as { MEDIA: R2Bucket }).MEDIA;
-const validTrip = (value: string | null) => value !== null && /^[0-2]$/.test(value);
+const validTrip = (value: string | null) => value !== null && /^\d+$/.test(value);
 type MediaRow = { id: string; trip_index: number; object_key: string; original_name: string; content_type: string; size_bytes: number; created_at: string };
+
+async function createUniqueObjectKey(tripIndex: string, file: File) {
+  const extension = file.name.match(/\.([a-zA-Z0-9]{1,10})$/)?.[1].toLowerCase();
+
+  while (true) {
+    const randomName = crypto.randomUUID();
+    const key = `friend-trips/${tripIndex}/${randomName}${extension ? `.${extension}` : ''}`;
+    if (!(await bucket().head(key))) return key;
+  }
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -72,9 +82,8 @@ export async function POST(request: Request) {
 
   const uploaded = [];
   const db = await ensureMediaSchema();
-  for (const [index, file] of files.entries()) {
-    const safeName = file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-');
-    const key = `friend-trips/${tripIndex}/${Date.now()}-${index}-${safeName}`;
+  for (const file of files) {
+    const key = await createUniqueObjectKey(tripIndex, file);
     await bucket().put(key, file.stream(), { httpMetadata: { contentType: file.type } });
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
