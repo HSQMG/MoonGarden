@@ -3,66 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Upload, Utensils, X } from 'lucide-react';
 
-const milestones = [
-  {
-    year: '2003',
-    title: 'Một cô gái nhỏ ra đời',
-    text: 'Ngày thế giới bỗng có thêm một người thật đặc biệt.',
-    icon: '✦',
-    media: [
-      {
-        type: 'image',
-        src: '/images/avatar/vy.jpg',
-        caption: 'Một bức ảnh đáng nhớ của Vy',
-      },
-    ],
-  },
-  {
-    year: '2018', title: 'Bước qua tuổi mười tám', text: 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', icon: '☼',
-    media: [{ type: 'image', src: '/images/year-2018/img_01.jpg', caption: 'Khoảnh khắc tuổi 18' }],
-  },
-  {
-    year: '2021', title: 'Tốt nghiệp trung học phổ thông', text: 'Trưởng thành hơn mỗi ngày.', icon: '⌁',
-    media: [{ type: 'image', src: '/images/year-2021/img_01.jpg', caption: 'Cô gái năm ấy đã trưởng thành.' }],
-  },
-  {
-    year: '2021', title: 'Bắt đầu một hành trình mới ở cấp bậc đại học', text: 'Cô ấy đã bắt đầu một chặng đường mới đầy hứa hẹn.', icon: '♡',
-    media: [{ type: 'image', src: '/images/year-2021/img_02.jpg', caption: 'Một cột mốc quan trọng cho một hành trình mới.' }],
-  },
-  {
-    year: '2025', title: 'Tốt nghiệp đại học', text: 'Cô ấy đã hoàn thành chặng đường học tập đầy thử thách.', icon: '⌁',
-    media: [{ type: 'image', src: '/images/year-2025/img_01.jpg', caption: 'Khoảnh khắc tốt nghiệp là một cột mốc quan trọng.' }],
-  },
-];
-
-const friendTrips = [
-  {
-    date: "12 · 03 · 2023",
-    title: "Một ngày trốn phố",
-    friends: "Cùng hội bạn thân",
-    caption:
-      "Chuyến đi ngẫu hứng, những câu chuyện không đầu không cuối và thật nhiều tiếng cười.",
-    tone: "lavender",
-  },
-  {
-    date: "27 · 08 · 2024",
-    title: "Hẹn nhau bên biển",
-    friends: "Cùng những người bạn đại học",
-    caption:
-      "Chiều hôm ấy, biển xanh và tuổi trẻ dường như đều không có điểm dừng.",
-    tone: "blue",
-  },
-  {
-    date: "05 · 01 · 2025",
-    title: "Chuyến đi đầu năm",
-    friends: "Cùng nhóm bạn thân",
-    caption:
-      "Một khởi đầu mới được đánh dấu bằng nắng, gió và những người luôn ở bên.",
-    tone: "amber",
-  },
-];
-
 type TripMedia = { key: string; tripIndex: number; type: 'image' | 'video'; url: string };
+type Milestone = { id: string; year: string; title: string; text: string; icon: string; media: Array<{ type: 'image'; src: string; caption: string }> };
+type FriendTrip = { id: string; date: string; title: string; friends: string; caption: string; tone: string };
 type JourneyResponse = {
   milestones: Array<{ id: string; event_year: number; title: string; description: string; icon: string; image_path: string | null; image_alt: string | null }>;
   friendTrips: Array<{ id: string; trip_date: string; title: string; friends: string; description: string; tone: string }>;
@@ -71,8 +14,10 @@ type JourneyResponse = {
 export default function Home() {
   const [viewer, setViewer] = useState<{ tripIndex: number; mediaIndex: number } | null>(null);
   const [tripMedia, setTripMedia] = useState<Record<number, TripMedia[]>>({});
-  const [journeyMilestones, setJourneyMilestones] = useState(milestones);
-  const [journeyTrips, setJourneyTrips] = useState(friendTrips);
+  const [journeyMilestones, setJourneyMilestones] = useState<Milestone[]>([]);
+  const [journeyTrips, setJourneyTrips] = useState<FriendTrip[]>([]);
+  const [journeyLoading, setJourneyLoading] = useState(true);
+  const [journeyError, setJourneyError] = useState('');
   const [uploading, setUploading] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');
   const activeTrip = viewer ? journeyTrips[viewer.tripIndex] : null;
@@ -89,20 +34,33 @@ export default function Home() {
   };
 
   const loadJourney = async () => {
-    const response = await fetch('/api/journey', { cache: 'no-store' });
-    if (!response.ok) return;
-    const data = await response.json() as JourneyResponse;
-    if (data.milestones.length) {
+    setJourneyLoading(true);
+    setJourneyError('');
+    try {
+      const response = await fetch('/api/journey', { cache: 'no-store' });
+      const data = await response.json() as JourneyResponse & { error?: string };
+      if (!response.ok) throw new Error(data.error || 'Không thể đọc dữ liệu từ Supabase.');
+
       setJourneyMilestones(data.milestones.map((item) => ({
-        year: String(item.event_year), title: item.title, text: item.description, icon: item.icon,
+        id: item.id,
+        year: String(item.event_year),
+        title: item.title,
+        text: item.description,
+        icon: item.icon,
         media: [{ type: 'image', src: item.image_path || '', caption: item.image_alt || item.title }],
       })));
-    }
-    if (data.friendTrips.length) {
       setJourneyTrips(data.friendTrips.map((trip) => ({
-        date: trip.trip_date.split('-').reverse().join(' · '), title: trip.title,
-        friends: trip.friends, caption: trip.description, tone: trip.tone,
+        id: trip.id,
+        date: trip.trip_date.split('-').reverse().join(' · '),
+        title: trip.title,
+        friends: trip.friends,
+        caption: trip.description,
+        tone: trip.tone,
       })));
+    } catch (error) {
+      setJourneyError(error instanceof Error ? error.message : 'Không thể đọc dữ liệu từ Supabase.');
+    } finally {
+      setJourneyLoading(false);
     }
   };
 
@@ -202,13 +160,15 @@ export default function Home() {
 
       <section className="timelineSection" id="timeline">
         <div className="sectionHead"><div className="sectionLabel light"><span>02</span> NHỮNG CHẶNG ĐƯỜNG</div><h2>Mỗi chặng đường<br /><i>đều làm nên Vy của hôm nay.</i></h2></div>
+        {journeyLoading && <p className="dataStatus" role="status">Đang tải dữ liệu từ Supabase...</p>}
+        {journeyError && <p className="uploadError" role="alert">{journeyError}</p>}
         <div className="timeline">{journeyMilestones.map((item, index) => (
-          <article className={`milestone ${index % 2 ? 'right' : ''}`} key={item.year}>
+          <article className={`milestone ${index % 2 ? 'right' : ''}`} key={item.id}>
             <div className="milestoneIcon">{item.icon}</div>
             <div className="milestoneCard">
               <div className="milestoneGallery">
                 {item.media.slice(0, 1).map((media) => (
-                  <figure className="milestoneMedia" key={item.year}>
+                  <figure className="milestoneMedia" key={item.id}>
                     {media.src ? (
                       <img src={media.src} alt={media.caption} loading="lazy" />
                     ) : (
@@ -233,7 +193,7 @@ export default function Home() {
         <div className="tripGrid">{journeyTrips.map((trip, index) => {
           const media = tripMedia[index] || [];
           return (
-            <article className={`tripCard ${trip.tone}`} key={trip.date}>
+            <article className={`tripCard ${trip.tone}`} key={trip.id}>
               <button className="tripMedia" type="button" disabled={!media.length} onClick={() => setViewer({ tripIndex: index, mediaIndex: 0 })} aria-label={media.length ? `Xem ${media.length} ảnh và video của ${trip.title}` : `Chưa có media cho ${trip.title}`}>
                 <span className="tripIndex">0{index + 1}</span>
                 {media[0]?.type === 'image' ? <img src={media[0].url} alt="" /> : media[0]?.type === 'video' ? <Play aria-hidden="true" /> : <Images aria-hidden="true" />}
