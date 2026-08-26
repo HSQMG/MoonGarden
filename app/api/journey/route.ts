@@ -35,7 +35,7 @@ export async function GET() {
   try {
     const [milestones, friendTrips] = await Promise.all([
       supabaseGet<SupabaseMilestone[]>('milestones', 'select=*&order=sort_order.asc'),
-      supabaseGet<SupabaseTrip[]>('friend_trips', 'select=*&order=sort_order.asc'),
+      supabaseGet<SupabaseTrip[]>('friend_trips', 'select=*&order=trip_date.asc,created_at.asc'),
     ]);
     return Response.json({ milestones, friendTrips });
   } catch (error) {

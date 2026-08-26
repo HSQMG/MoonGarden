@@ -44,7 +44,6 @@ export default function JourneyManager() {
       friends: String(form.get('friends') || ''),
       description: String(form.get('description') || ''),
       tone: String(form.get('tone') || 'lavender'),
-      sort_order: Number(form.get('sort_order')),
     };
 
     try {
@@ -158,6 +157,6 @@ function MilestoneFields({ item, nextOrder }: { item: Milestone | null; nextOrde
   return <div className="editorFields"><label>Năm<input name="event_year" type="number" min="1900" max="2200" required defaultValue={item?.event_year || new Date().getFullYear()} /></label><label>Biểu tượng<input name="icon" maxLength={8} defaultValue={item?.icon || '✦'} /></label><label className="wide">Tiêu đề<input name="title" required defaultValue={item?.title || ''} /></label><label className="wide">Mô tả<textarea name="description" rows={3} defaultValue={item?.description || ''} /></label><label className="wide">Chú thích ảnh<input name="image_alt" placeholder="Có thể thêm sau khi tải ảnh" defaultValue={item?.image_alt || ''} /></label><label>Thứ tự<input name="sort_order" type="number" min="0" required defaultValue={item?.sort_order ?? nextOrder} /></label></div>;
 }
 
-function TripFields({ item, nextOrder }: { item: Trip | null; nextOrder: number }) {
-  return <div className="editorFields"><label>Ngày đi<input name="trip_date" type="date" required defaultValue={item?.trip_date || ''} /></label><label>Màu sắc<select name="tone" defaultValue={item?.tone || 'lavender'}><option value="lavender">Tím nhạt</option><option value="blue">Xanh</option><option value="amber">Vàng nâu</option></select></label><label className="wide">Tên chuyến đi<input name="title" required defaultValue={item?.title || ''} /></label><label className="wide">Đi cùng ai<input name="friends" defaultValue={item?.friends || ''} /></label><label className="wide">Ghi chú<textarea name="description" rows={3} defaultValue={item?.description || ''} /></label><label>Thứ tự<input name="sort_order" type="number" min="0" required defaultValue={item?.sort_order ?? nextOrder} /></label></div>;
+function TripFields({ item }: { item: Trip | null; nextOrder: number }) {
+  return <div className="editorFields"><label>Ngày đi<input name="trip_date" type="date" required defaultValue={item?.trip_date || ''} /></label><label>Màu sắc<select name="tone" defaultValue={item?.tone || 'lavender'}><option value="lavender">Tím nhạt</option><option value="blue">Xanh</option><option value="amber">Vàng nâu</option></select></label><label className="wide">Tên chuyến đi<input name="title" required defaultValue={item?.title || ''} /></label><label className="wide">Đi cùng ai<input name="friends" defaultValue={item?.friends || ''} /></label><label className="wide">Ghi chú<textarea name="description" rows={3} defaultValue={item?.description || ''} /></label><p className="wide autoSortNote">Các chuyến đi sẽ tự động sắp xếp theo ngày, từ cũ đến mới.</p></div>;
 }
