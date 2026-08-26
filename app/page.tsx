@@ -9,7 +9,7 @@ const milestones = [
     media: [
       {
         type: 'image',
-        src: 'https://scontent.fsgn17-1.fna.fbcdn.net/v/t39.30808-6/482238878_1851550778927112_9040712506363359586_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx928x1629&ctp=s928x1629&_nc_cat=106&ccb=1-7&_nc_sid=833d8c&_nc_ohc=Sj7mS71ek54Q7kNvwFfOKuz&_nc_oc=AdpGc9ghCkAMzJyawZsp1uWkcaIE_Fc6lnrCq6NCS3ZExnkJy9ncP1ppQFqq_Y2bVO-lFIlkaHa_7WZMyE9UZcMD&_nc_zt=23&_nc_ht=scontent.fsgn17-1.fna&_nc_gid=d7j0mYBU5wuQjqkjdZo0WQ&_nc_ss=7b2a8&oh=00_AQFJqofUnRlc5JRxWHiy_3QgZrPdZl_kjZ-joYH8JD_F2w&oe=6A9464B8',
+        src: '/images/vy.jpg',
         caption: 'Một bức ảnh đáng nhớ của Vy',
       },
     ],
@@ -55,7 +55,7 @@ export default function Home() {
         <div className="sectionLabel"><span>01</span> VỀ VY</div>
         <div className="portraitCard" aria-label="Ảnh chân dung của Vy">
           <img
-            src="https://scontent.fsgn17-1.fna.fbcdn.net/v/t39.30808-6/482238878_1851550778927112_9040712506363359586_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx928x1629&ctp=s928x1629&_nc_cat=106&ccb=1-7&_nc_sid=833d8c&_nc_ohc=Sj7mS71ek54Q7kNvwFfOKuz&_nc_oc=AdpGc9ghCkAMzJyawZsp1uWkcaIE_Fc6lnrCq6NCS3ZExnkJy9ncP1ppQFqq_Y2bVO-lFIlkaHa_7WZMyE9UZcMD&_nc_zt=23&_nc_ht=scontent.fsgn17-1.fna&_nc_gid=d7j0mYBU5wuQjqkjdZo0WQ&_nc_ss=7b2a8&oh=00_AQFJqofUnRlc5JRxWHiy_3QgZrPdZl_kjZ-joYH8JD_F2w&oe=6A9464B8"
+            src="/images/vy.jpg"
             alt="Ảnh của Vy"
             className="portraitImage"
           />
