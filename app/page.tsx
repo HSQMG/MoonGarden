@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Utensils, X } from 'lucide-react';
+import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Upload, Utensils, X } from 'lucide-react';
 
 const milestones = [
   {
@@ -36,20 +36,77 @@ const milestones = [
 ];
 
 const friendTrips = [
-  { date: '12 · 03 · 2023', title: 'Một ngày trốn phố', friends: 'Cùng hội bạn thân', caption: 'Chuyến đi ngẫu hứng, những câu chuyện không đầu không cuối và thật nhiều tiếng cười.', tone: 'lavender', media: [{ type: 'image', src: '', caption: 'Khoảnh khắc đầu tiên' }, { type: 'image', src: '', caption: 'Một nụ cười thật đẹp' }, { type: 'video', src: '', caption: 'Đoạn phim của chuyến đi' }] },
-  { date: '27 · 08 · 2024', title: 'Hẹn nhau bên biển', friends: 'Cùng những người bạn đại học', caption: 'Chiều hôm ấy, biển xanh và tuổi trẻ dường như đều không có điểm dừng.', tone: 'blue', media: [{ type: 'image', src: '', caption: 'Buổi chiều bên biển' }, { type: 'video', src: '', caption: 'Sóng biển và tiếng cười' }] },
-  { date: '05 · 01 · 2025', title: 'Chuyến đi đầu năm', friends: 'Cùng nhóm bạn thân', caption: 'Một khởi đầu mới được đánh dấu bằng nắng, gió và những người luôn ở bên.', tone: 'amber', media: [{ type: 'image', src: '', caption: 'Ngày đầu tiên của chuyến đi' }, { type: 'image', src: '', caption: 'Khoảnh khắc cùng nhau' }] },
+  {
+    date: "12 · 03 · 2023",
+    title: "Một ngày trốn phố",
+    friends: "Cùng hội bạn thân",
+    caption:
+      "Chuyến đi ngẫu hứng, những câu chuyện không đầu không cuối và thật nhiều tiếng cười.",
+    tone: "lavender",
+  },
+  {
+    date: "27 · 08 · 2024",
+    title: "Hẹn nhau bên biển",
+    friends: "Cùng những người bạn đại học",
+    caption:
+      "Chiều hôm ấy, biển xanh và tuổi trẻ dường như đều không có điểm dừng.",
+    tone: "blue",
+  },
+  {
+    date: "05 · 01 · 2025",
+    title: "Chuyến đi đầu năm",
+    friends: "Cùng nhóm bạn thân",
+    caption:
+      "Một khởi đầu mới được đánh dấu bằng nắng, gió và những người luôn ở bên.",
+    tone: "amber",
+  },
 ];
+
+type TripMedia = { key: string; tripIndex: number; type: 'image' | 'video'; url: string };
 
 export default function Home() {
   const [viewer, setViewer] = useState<{ tripIndex: number; mediaIndex: number } | null>(null);
+  const [tripMedia, setTripMedia] = useState<Record<number, TripMedia[]>>({});
+  const [uploading, setUploading] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState('');
   const activeTrip = viewer ? friendTrips[viewer.tripIndex] : null;
-  const activeMedia = activeTrip && viewer ? activeTrip.media[viewer.mediaIndex] : null;
+  const activeList = viewer ? (tripMedia[viewer.tripIndex] || []) : [];
+  const activeMedia = viewer ? activeList[viewer.mediaIndex] : null;
+
+  const loadMedia = async () => {
+    const response = await fetch('/api/trip-media', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json() as { media: TripMedia[] };
+    const grouped: Record<number, TripMedia[]> = {};
+    for (const media of data.media) (grouped[media.tripIndex] ||= []).push(media);
+    setTripMedia(grouped);
+  };
+
+  useEffect(() => { loadMedia(); }, []);
+
+  const uploadMedia = async (tripIndex: number, files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(tripIndex);
+    setUploadError('');
+    const form = new FormData();
+    form.append('tripIndex', String(tripIndex));
+    Array.from(files).forEach((file) => form.append('files', file));
+    try {
+      const response = await fetch('/api/trip-media', { method: 'POST', body: form });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || 'Không thể tải tệp lên.');
+      await loadMedia();
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Không thể tải tệp lên.');
+    } finally {
+      setUploading(null);
+    }
+  };
 
   const changeMedia = (direction: number) => {
     setViewer((current) => {
       if (!current) return null;
-      const total = friendTrips[current.tripIndex].media.length;
+      const total = (tripMedia[current.tripIndex] || []).length;
       return { ...current, mediaIndex: (current.mediaIndex + direction + total) % total };
     });
   };
@@ -147,17 +204,27 @@ export default function Home() {
 
       <section className="friends section" id="friends">
         <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG LẦN ĐI CÙNG BẠN BÈ</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
-        <div className="tripGrid">{friendTrips.map((trip, index) => (
-          <article className={`tripCard ${trip.tone}`} key={trip.date}>
-            <button className="tripMedia" type="button" onClick={() => setViewer({ tripIndex: index, mediaIndex: 0 })} aria-label={`Xem ${trip.media.length} ảnh và video của ${trip.title}`}>
-              <span className="tripIndex">0{index + 1}</span>
-              {trip.media[0].src ? <img src={trip.media[0].src} alt="" /> : <Images aria-hidden="true" />}
-              <span className="mediaType"><Images aria-hidden="true" />{trip.media.length} mục</span>
-              <span className="openGallery">Nhấn để xem tất cả</span>
-            </button>
-            <div className="tripCopy"><time>{trip.date}</time><h3>{trip.title}</h3><p className="friendsWith">{trip.friends}</p><p>{trip.caption}</p><small>{trip.media.length} ảnh / video · Có chú thích riêng</small></div>
-          </article>
-        ))}</div>
+        {uploadError && <p className="uploadError" role="alert">{uploadError}</p>}
+        <div className="tripGrid">{friendTrips.map((trip, index) => {
+          const media = tripMedia[index] || [];
+          return (
+            <article className={`tripCard ${trip.tone}`} key={trip.date}>
+              <button className="tripMedia" type="button" disabled={!media.length} onClick={() => setViewer({ tripIndex: index, mediaIndex: 0 })} aria-label={media.length ? `Xem ${media.length} ảnh và video của ${trip.title}` : `Chưa có media cho ${trip.title}`}>
+                <span className="tripIndex">0{index + 1}</span>
+                {media[0]?.type === 'image' ? <img src={media[0].url} alt="" /> : media[0]?.type === 'video' ? <Play aria-hidden="true" /> : <Images aria-hidden="true" />}
+                <span className="mediaType"><Images aria-hidden="true" />{media.length} mục</span>
+                {media.length > 0 && <span className="openGallery">Nhấn để xem tất cả</span>}
+              </button>
+              <div className="tripCopy">
+                <time>{trip.date}</time><h3>{trip.title}</h3><p className="friendsWith">{trip.friends}</p><p>{trip.caption}</p>
+                <label className={`uploadMedia ${uploading === index ? 'isUploading' : ''}`}>
+                  <Upload aria-hidden="true" />{uploading === index ? 'Đang tải lên...' : 'Thêm nhiều ảnh / video'}
+                  <input type="file" accept="image/*,video/*" multiple disabled={uploading !== null} onChange={(event) => { uploadMedia(index, event.target.files); event.target.value = ''; }} />
+                </label>
+              </div>
+            </article>
+          );
+        })}</div>
       </section>
 
       {viewer && activeTrip && activeMedia && (
@@ -165,27 +232,20 @@ export default function Home() {
           <button className="viewerClose" type="button" onClick={() => setViewer(null)} aria-label="Đóng thư viện"><X aria-hidden="true" /></button>
           <div className="viewerPanel" onClick={(event) => event.stopPropagation()}>
             <div className="viewerStage">
-              {activeMedia.src ? (
-                activeMedia.type === 'video' ? (
-                  <video key={activeMedia.src} src={activeMedia.src} controls playsInline autoPlay />
-                ) : (
-                  <img src={activeMedia.src} alt={activeMedia.caption} />
-                )
+              {activeMedia.type === 'video' ? (
+                <video key={activeMedia.url} src={activeMedia.url} controls playsInline autoPlay />
               ) : (
-                <div className="viewerPlaceholder">
-                  {activeMedia.type === 'video' ? <Play aria-hidden="true" /> : <Images aria-hidden="true" />}
-                  <span>Thêm {activeMedia.type === 'video' ? 'video' : 'ảnh'} vào đây</span>
-                </div>
+                <img src={activeMedia.url} alt="" />
               )}
-              {activeTrip.media.length > 1 && <>
+              {activeList.length > 1 && <>
                 <button className="viewerNav prev" type="button" onClick={() => changeMedia(-1)} aria-label="Mục trước"><ChevronLeft aria-hidden="true" /></button>
                 <button className="viewerNav next" type="button" onClick={() => changeMedia(1)} aria-label="Mục tiếp theo"><ChevronRight aria-hidden="true" /></button>
               </>}
             </div>
-            <div className="viewerInfo"><div><small>{activeTrip.title}</small><p>{activeMedia.caption}</p></div><span>{viewer.mediaIndex + 1} / {activeTrip.media.length}</span></div>
-            <div className="viewerThumbs">{activeTrip.media.map((media, mediaIndex) => (
-              <button className={mediaIndex === viewer.mediaIndex ? 'active' : ''} type="button" key={`${media.type}-${mediaIndex}`} onClick={() => setViewer({ ...viewer, mediaIndex })} aria-label={`Xem mục ${mediaIndex + 1}`}>
-                {media.src && media.type === 'image' ? <img src={media.src} alt="" /> : media.type === 'video' ? <Play aria-hidden="true" /> : <Images aria-hidden="true" />}
+            <div className="viewerInfo"><small>{activeTrip.title}</small><span>{viewer.mediaIndex + 1} / {activeList.length}</span></div>
+            <div className="viewerThumbs">{activeList.map((media, mediaIndex) => (
+              <button className={mediaIndex === viewer.mediaIndex ? 'active' : ''} type="button" key={media.key} onClick={() => setViewer({ ...viewer, mediaIndex })} aria-label={`Xem mục ${mediaIndex + 1}`}>
+                {media.type === 'image' ? <img src={media.url} alt="" /> : <Play aria-hidden="true" />}
               </button>
             ))}</div>
           </div>
