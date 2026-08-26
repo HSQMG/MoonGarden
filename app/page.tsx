@@ -12,12 +12,11 @@ const milestones = [
         src: 'https://scontent.fsgn17-1.fna.fbcdn.net/v/t39.30808-6/482238878_1851550778927112_9040712506363359586_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx928x1629&ctp=s928x1629&_nc_cat=106&ccb=1-7&_nc_sid=833d8c&_nc_ohc=Sj7mS71ek54Q7kNvwFfOKuz&_nc_oc=AdpGc9ghCkAMzJyawZsp1uWkcaIE_Fc6lnrCq6NCS3ZExnkJy9ncP1ppQFqq_Y2bVO-lFIlkaHa_7WZMyE9UZcMD&_nc_zt=23&_nc_ht=scontent.fsgn17-1.fna&_nc_gid=d7j0mYBU5wuQjqkjdZo0WQ&_nc_ss=7b2a8&oh=00_AQFJqofUnRlc5JRxWHiy_3QgZrPdZl_kjZ-joYH8JD_F2w&oe=6A9464B8',
         caption: 'Một bức ảnh đáng nhớ của Vy',
       },
-      { type: 'image', src: '', caption: 'Ảnh tuổi thơ thứ hai' },
     ],
   },
   {
     year: '2019', title: 'Bước qua tuổi mười tám', text: 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', icon: '☼',
-    media: [{ type: 'video', src: '', poster: '', caption: 'Video khoảnh khắc tuổi 18' }],
+    media: [{ type: 'image', src: '', caption: 'Khoảnh khắc tuổi 18' }],
   },
   {
     year: '2022', title: 'Chuyến đi đáng nhớ', text: 'Lần đầu chạm vào một vùng đất mới, gom nắng và gió vào ký ức.', icon: '⌁',
@@ -25,7 +24,7 @@ const milestones = [
   },
   {
     year: '2024', title: 'Ngày mình biết đến Vy', text: 'Một cột mốc nhỏ thôi, nhưng lại khiến thế giới của ai đó đổi khác.', icon: '♡',
-    media: [{ type: 'video', src: '', poster: '', caption: 'Một đoạn phim rất riêng' }],
+    media: [{ type: 'image', src: '', caption: 'Một khoảnh khắc rất riêng' }],
   },
 ];
 
@@ -91,22 +90,15 @@ export default function Home() {
           <article className={`milestone ${index % 2 ? 'right' : ''}`} key={item.year}>
             <div className="milestoneIcon">{item.icon}</div>
             <div className="milestoneCard">
-              <div className={`milestoneGallery ${item.media.length > 1 ? 'multiple' : ''}`}>
-                {item.media.map((media, mediaIndex) => (
-                  <figure className="milestoneMedia" key={`${item.year}-${mediaIndex}`}>
+              <div className="milestoneGallery">
+                {item.media.slice(0, 1).map((media) => (
+                  <figure className="milestoneMedia" key={item.year}>
                     {media.src ? (
-                      media.type === 'video' ? (
-                        <video controls playsInline preload="metadata" >
-                          <source src={media.src} />
-                          Trình duyệt của bạn không hỗ trợ video.
-                        </video>
-                      ) : (
-                        <img src={media.src} alt={media.caption} loading="lazy" />
-                      )
+                      <img src={media.src} alt={media.caption} loading="lazy" />
                     ) : (
-                      <div className="mediaPlaceholder" aria-label={`Vị trí thêm ${media.type === 'video' ? 'video' : 'ảnh'}`}>
-                        <span>{media.type === 'video' ? 'VIDEO' : 'ẢNH'}</span>
-                        <b>{media.type === 'video' ? '▶' : '▧'}</b>
+                      <div className="mediaPlaceholder" aria-label="Vị trí thêm ảnh">
+                        <span>ẢNH</span>
+                        <b>▧</b>
                       </div>
                     )}
                     <figcaption>{media.caption}</figcaption>
