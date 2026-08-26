@@ -36,3 +36,4 @@ h1{max-width:1200px;letter-spacing:-.035em;text-wrap:balance}.heroText{text-wrap
 @media(max-width:430px){.hero{padding-top:105px;padding-bottom:55px}.hero:after{inset:10px}.eyebrow{font-size:9px;letter-spacing:.19em;margin-bottom:20px}.heroText{margin:24px 0}.scrollCue{margin-top:12px}.brandWords{font-size:13px}.about{padding-top:78px;padding-bottom:85px}.portraitCard{width:calc(100% - 12px)}.timelineSection{padding-top:90px;padding-bottom:95px}.sectionHead h2{margin-bottom:62px}.tripCopy h3{font-size:27px}.letter h2{font-size:31px}.letterPaper{padding:58px 22px}.traits span{font-size:11px}}
 
 .traits span{display:inline-flex;align-items:center;gap:8px}.traits svg{width:16px;height:16px;flex:0 0 auto;stroke-width:1.8;color:var(--wine)}
+.portraitImage{width:100%;height:100%;display:block;object-fit:cover;object-position:center}

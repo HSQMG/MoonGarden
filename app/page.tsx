@@ -1,7 +1,7 @@
 import { Camera, Cat, Flower2, Headphones, Mic2, Sprout, Trees, Utensils } from 'lucide-react';
 
 const milestones = [
-  { year: '2001', title: 'Một cô gái nhỏ ra đời', text: 'Ngày thế giới bỗng có thêm một người thật đặc biệt.', icon: '✦', media: 'Ảnh tuổi thơ', type: 'ẢNH' },
+  { year: '2003', title: 'Một cô gái nhỏ ra đời', text: 'Ngày thế giới bỗng có thêm một người thật đặc biệt.', icon: '✦', media: 'Ảnh tuổi thơ', type: 'ẢNH' },
   { year: '2019', title: 'Bước qua tuổi mười tám', text: 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', icon: '☼', media: 'Khoảnh khắc tuổi 18', type: 'VIDEO' },
   { year: '2022', title: 'Chuyến đi đáng nhớ', text: 'Lần đầu chạm vào một vùng đất mới, gom nắng và gió vào ký ức.', icon: '⌁', media: 'Kỷ niệm của chuyến đi', type: 'ẢNH' },
   { year: '2024', title: 'Ngày mình biết đến Vy', text: 'Một cột mốc nhỏ thôi, nhưng lại khiến thế giới của ai đó đổi khác.', icon: '♡', media: 'Một đoạn phim rất riêng', type: 'VIDEO' },
@@ -32,7 +32,13 @@ export default function Home() {
 
       <section className="about section" id="about">
         <div className="sectionLabel"><span>01</span> VỀ VY</div>
-        <div className="portraitCard" aria-label="Vị trí dành cho ảnh chân dung của Vy"><div className="portraitGlow" /><div className="flower">❀</div><p>Ảnh của Vy</p><small>Thay bằng ảnh chân dung tại đây</small></div>
+        <div className="portraitCard" aria-label="Ảnh chân dung của Vy">
+          <img
+            src="https://scontent.fsgn17-1.fna.fbcdn.net/v/t39.30808-6/482238878_1851550778927112_9040712506363359586_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx928x1629&ctp=s928x1629&_nc_cat=106&ccb=1-7&_nc_sid=833d8c&_nc_ohc=Sj7mS71ek54Q7kNvwFfOKuz&_nc_oc=AdpGc9ghCkAMzJyawZsp1uWkcaIE_Fc6lnrCq6NCS3ZExnkJy9ncP1ppQFqq_Y2bVO-lFIlkaHa_7WZMyE9UZcMD&_nc_zt=23&_nc_ht=scontent.fsgn17-1.fna&_nc_gid=d7j0mYBU5wuQjqkjdZo0WQ&_nc_ss=7b2a8&oh=00_AQFJqofUnRlc5JRxWHiy_3QgZrPdZl_kjZ-joYH8JD_F2w&oe=6A9464B8"
+            alt="Ảnh của Vy"
+            className="portraitImage"
+          />
+        </div>
         <div className="aboutCopy">
           <p className="script">Nếu phải kể về cô ấy...</p><h2>Cô ấy là một bản nhạc<br />dịu dàng giữa thành phố vội.</h2>
           <dl className="profileFacts">
