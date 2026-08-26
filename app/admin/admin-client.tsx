@@ -5,7 +5,7 @@ import { ArrowLeft, Film, Image as ImageIcon, LoaderCircle, Trash2, Upload } fro
 import JourneyManager from './journey-manager';
 
 type Trip = { id: string; trip_date: string; title: string; friends: string };
-type Media = { key: string; tripIndex: number; type: 'image' | 'video'; url: string; name?: string; size?: number };
+type Media = { key: string; tripId: string | null; type: 'image' | 'video'; url: string; name?: string; size?: number };
 
 export default function AdminClient() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -27,19 +27,19 @@ export default function AdminClient() {
 
   useEffect(() => { loadData().catch((error) => setMessage(error.message)); }, [loadData]);
 
-  const upload = async (tripIndex: number, files: FileList | null) => {
+  const upload = async (trip: Trip, files: FileList | null) => {
     if (!files?.length) return;
-    setBusy(`upload-${tripIndex}`);
+    setBusy(`upload-${trip.id}`);
     setMessage('');
     const form = new FormData();
-    form.append('tripIndex', String(tripIndex));
+    form.append('tripId', trip.id);
     Array.from(files).forEach((file) => form.append('files', file));
     try {
       const response = await fetch('/api/trip-media', { method: 'POST', body: form });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || 'Không thể tải tệp lên.');
       await loadData();
-      setMessage(`Đã tải lên ${files.length} tệp.`);
+      setMessage(`Đã thêm ${files.length} tệp vào “${trip.title}”.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không thể tải tệp lên.');
     } finally {
@@ -60,7 +60,7 @@ export default function AdminClient() {
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || 'Không thể xóa tệp.');
       await loadData();
-      setMessage('Đã xóa tệp khỏi thư viện.');
+      setMessage(`Đã xóa “${item.name || 'tệp media'}” khỏi thư viện.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không thể xóa tệp.');
     } finally {
@@ -81,8 +81,8 @@ export default function AdminClient() {
 
       <section className="adminTrips">
         {trips.map((trip, tripIndex) => {
-          const tripMedia = media.filter((item) => item.tripIndex === tripIndex);
-          const uploading = busy === `upload-${tripIndex}`;
+          const tripMedia = media.filter((item) => item.tripId === trip.id);
+          const uploading = busy === `upload-${trip.id}`;
           return (
             <article className="adminTrip" key={trip.id}>
               <div className="adminTripHead">
@@ -90,7 +90,7 @@ export default function AdminClient() {
                 <label className={uploading ? 'isBusy' : ''}>
                   {uploading ? <LoaderCircle className="spin" aria-hidden="true" /> : <Upload aria-hidden="true" />}
                   {uploading ? 'Đang tải...' : 'Thêm ảnh / video'}
-                  <input type="file" accept="image/*,video/*" multiple disabled={busy !== null} onChange={(event) => { upload(tripIndex, event.target.files); event.target.value = ''; }} />
+                  <input type="file" accept="image/*,video/*" multiple disabled={busy !== null} onChange={(event) => { upload(trip, event.target.files); event.target.value = ''; }} />
                 </label>
               </div>
 

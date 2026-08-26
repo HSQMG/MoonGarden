@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Utensils, X } from 'lucide-react';
 
-type TripMedia = { key: string; tripIndex: number; type: 'image' | 'video'; url: string };
+type TripMedia = { key: string; tripId: string | null; type: 'image' | 'video'; url: string };
 type Milestone = { id: string; year: string; title: string; text: string; icon: string; media: Array<{ type: 'image'; src: string; caption: string }> };
 type FriendTrip = { id: string; date: string; title: string; friends: string; caption: string; tone: string };
 type JourneyResponse = {
@@ -13,21 +13,21 @@ type JourneyResponse = {
 
 export default function Home() {
   const [viewer, setViewer] = useState<{ tripIndex: number; mediaIndex: number } | null>(null);
-  const [tripMedia, setTripMedia] = useState<Record<number, TripMedia[]>>({});
+  const [tripMedia, setTripMedia] = useState<Record<string, TripMedia[]>>({});
   const [journeyMilestones, setJourneyMilestones] = useState<Milestone[]>([]);
   const [journeyTrips, setJourneyTrips] = useState<FriendTrip[]>([]);
   const [journeyLoading, setJourneyLoading] = useState(true);
   const [journeyError, setJourneyError] = useState('');
   const activeTrip = viewer ? journeyTrips[viewer.tripIndex] : null;
-  const activeList = viewer ? (tripMedia[viewer.tripIndex] || []) : [];
+  const activeList = viewer && activeTrip ? (tripMedia[activeTrip.id] || []) : [];
   const activeMedia = viewer ? activeList[viewer.mediaIndex] : null;
 
   const loadMedia = async () => {
     const response = await fetch('/api/trip-media', { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json() as { media: TripMedia[] };
-    const grouped: Record<number, TripMedia[]> = {};
-    for (const media of data.media) (grouped[media.tripIndex] ||= []).push(media);
+    const grouped: Record<string, TripMedia[]> = {};
+    for (const media of data.media) if (media.tripId) (grouped[media.tripId] ||= []).push(media);
     setTripMedia(grouped);
   };
 
@@ -68,7 +68,9 @@ export default function Home() {
   const changeMedia = (direction: number) => {
     setViewer((current) => {
       if (!current) return null;
-      const total = (tripMedia[current.tripIndex] || []).length;
+      const tripId = journeyTrips[current.tripIndex]?.id;
+      const total = tripId ? (tripMedia[tripId] || []).length : 0;
+      if (!total) return current;
       return { ...current, mediaIndex: (current.mediaIndex + direction + total) % total };
     });
   };
@@ -169,7 +171,7 @@ export default function Home() {
       <section className="friends section" id="friends">
         <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG LẦN ĐI CÙNG BẠN BÈ</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
         <div className="tripGrid">{journeyTrips.map((trip, index) => {
-          const media = tripMedia[index] || [];
+          const media = tripMedia[trip.id] || [];
           return (
             <article className={`tripCard ${trip.tone}`} key={trip.id}>
               <button className="tripMedia" type="button" disabled={!media.length} onClick={() => setViewer({ tripIndex: index, mediaIndex: 0 })} aria-label={media.length ? `Xem ${media.length} ảnh và video của ${trip.title}` : `Chưa có media cho ${trip.title}`}>

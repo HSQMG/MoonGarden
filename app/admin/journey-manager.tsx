@@ -56,7 +56,8 @@ export default function JourneyManager() {
       if (!response.ok) throw new Error(result.error || 'Không thể lưu dữ liệu.');
       await load();
       setEditor(null);
-      setMessage(editor.item ? 'Đã cập nhật dữ liệu.' : 'Đã thêm dữ liệu mới.');
+      const section = editor.entity === 'milestone' ? 'Phần 02' : 'Phần 03';
+      setMessage(editor.item ? `Đã cập nhật “${data.title}” trong ${section}.` : `Đã thêm “${data.title}” vào ${section}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không thể lưu dữ liệu.');
     } finally {
@@ -64,8 +65,8 @@ export default function JourneyManager() {
     }
   };
 
-  const remove = async (entity: 'milestone' | 'friendTrip', id: string, tripIndex?: number) => {
-    if (!window.confirm('Bạn có chắc muốn xóa mục này? Dữ liệu đã xóa không thể khôi phục.')) return;
+  const remove = async (entity: 'milestone' | 'friendTrip', id: string, title: string, tripIndex?: number) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa “${title}”? Dữ liệu đã xóa không thể khôi phục.`)) return;
     setBusy(true);
     setMessage('');
     try {
@@ -77,7 +78,7 @@ export default function JourneyManager() {
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error || 'Không thể xóa dữ liệu.');
       await load();
-      setMessage('Đã xóa mục thành công.');
+      setMessage(`Đã xóa “${title}” khỏi ${entity === 'milestone' ? 'Phần 02' : 'Phần 03'}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không thể xóa dữ liệu.');
     } finally {
@@ -97,7 +98,8 @@ export default function JourneyManager() {
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error || 'Không thể tải ảnh lên.');
       await load();
-      setMessage('Đã thay ảnh cho cột mốc.');
+      const milestone = milestones.find((item) => item.id === milestoneId);
+      setMessage(`Đã ${milestone?.image_path ? 'thay' : 'thêm'} ảnh cho “${milestone?.title || 'cột mốc'}”.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không thể tải ảnh lên.');
     } finally {
@@ -106,7 +108,8 @@ export default function JourneyManager() {
   };
 
   const removeMilestoneImage = async (milestoneId: string) => {
-    if (!window.confirm('Bạn có chắc muốn xóa ảnh của cột mốc này?')) return;
+    const milestone = milestones.find((item) => item.id === milestoneId);
+    if (!window.confirm(`Bạn có chắc muốn xóa ảnh của “${milestone?.title || 'cột mốc này'}”?`)) return;
     setBusy(true);
     setMessage('');
     try {
@@ -118,7 +121,7 @@ export default function JourneyManager() {
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error || 'Không thể xóa ảnh.');
       await load();
-      setMessage('Đã xóa ảnh của cột mốc.');
+      setMessage(`Đã xóa ảnh của “${milestone?.title || 'cột mốc'}”.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không thể xóa ảnh.');
     } finally {
@@ -133,14 +136,14 @@ export default function JourneyManager() {
       <div className="managerBlock">
         <div className="managerTitle"><div><small>PHẦN 02</small><h2><Flag aria-hidden="true" />Những chặng đường</h2></div><button type="button" onClick={() => setEditor({ entity: 'milestone', item: null })}><Plus aria-hidden="true" />Thêm cột mốc</button></div>
         <div className="managerRows">{milestones.map((item) => (
-          <article key={item.id}><div className="milestoneAdminThumb">{item.image_path ? <img src={item.image_path} alt={item.image_alt || item.title} /> : <b>{item.icon}</b>}</div><div><small>{item.event_year}</small><h3>{item.title}</h3><p>{item.description}</p></div><div className="rowActions milestoneActions"><label><Upload aria-hidden="true" />{item.image_path ? 'Thay ảnh' : 'Thêm ảnh'}<input type="file" accept="image/*" disabled={busy} onChange={(event) => { uploadMilestoneImage(item.id, event.target.files?.[0]); event.target.value = ''; }} /></label>{item.image_path && <button className="danger" type="button" disabled={busy} onClick={() => removeMilestoneImage(item.id)}><ImageIcon aria-hidden="true" />Xóa ảnh</button>}<button type="button" onClick={() => setEditor({ entity: 'milestone', item })}><Edit3 aria-hidden="true" />Sửa</button><button className="danger" type="button" disabled={busy} onClick={() => remove('milestone', item.id)}><Trash2 aria-hidden="true" />Xóa mục</button></div></article>
+          <article key={item.id}><div className="milestoneAdminThumb">{item.image_path ? <img src={item.image_path} alt={item.image_alt || item.title} /> : <b>{item.icon}</b>}</div><div><small>{item.event_year}</small><h3>{item.title}</h3><p>{item.description}</p></div><div className="rowActions milestoneActions"><label><Upload aria-hidden="true" />{item.image_path ? 'Thay ảnh' : 'Thêm ảnh'}<input type="file" accept="image/*" disabled={busy} onChange={(event) => { uploadMilestoneImage(item.id, event.target.files?.[0]); event.target.value = ''; }} /></label>{item.image_path && <button className="danger" type="button" disabled={busy} onClick={() => removeMilestoneImage(item.id)}><ImageIcon aria-hidden="true" />Xóa ảnh</button>}<button type="button" onClick={() => setEditor({ entity: 'milestone', item })}><Edit3 aria-hidden="true" />Sửa</button><button className="danger" type="button" disabled={busy} onClick={() => remove('milestone', item.id, item.title)}><Trash2 aria-hidden="true" />Xóa mục</button></div></article>
         ))}</div>
       </div>
 
       <div className="managerBlock">
         <div className="managerTitle"><div><small>PHẦN 03</small><h2><CalendarDays aria-hidden="true" />Những lần đi cùng bạn bè</h2></div><button type="button" onClick={() => setEditor({ entity: 'friendTrip', item: null })}><Plus aria-hidden="true" />Thêm chuyến đi</button></div>
         <div className="managerRows">{trips.map((item, index) => (
-          <article key={item.id}><b>0{index + 1}</b><div><small>{item.trip_date.split('-').reverse().join(' · ')}</small><h3>{item.title}</h3><p>{item.friends}</p></div><div className="rowActions"><button type="button" onClick={() => setEditor({ entity: 'friendTrip', item })}><Edit3 aria-hidden="true" />Sửa</button><button className="danger" type="button" disabled={busy} onClick={() => remove('friendTrip', item.id, index)}><Trash2 aria-hidden="true" />Xóa</button></div></article>
+          <article key={item.id}><b>0{index + 1}</b><div><small>{item.trip_date.split('-').reverse().join(' · ')}</small><h3>{item.title}</h3><p>{item.friends}</p></div><div className="rowActions"><button type="button" onClick={() => setEditor({ entity: 'friendTrip', item })}><Edit3 aria-hidden="true" />Sửa</button><button className="danger" type="button" disabled={busy} onClick={() => remove('friendTrip', item.id, item.title, index)}><Trash2 aria-hidden="true" />Xóa</button></div></article>
         ))}</div>
       </div>
 

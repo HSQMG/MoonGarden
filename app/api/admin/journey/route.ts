@@ -49,27 +49,15 @@ function cleanData(entity: Entity, input: Record<string, unknown>, creating = fa
   return data;
 }
 
-async function deleteTripMedia(tripIndex: number) {
+async function deleteTripMedia(tripId: string, legacyTripIndex?: number) {
   const db = await ensureMediaSchema();
-  const rows = await db.prepare('SELECT object_key FROM trip_media WHERE trip_index = ?').bind(tripIndex).all<{ object_key: string }>();
+  const rows = legacyTripIndex === undefined
+    ? await db.prepare('SELECT object_key FROM trip_media WHERE trip_id = ?').bind(tripId).all<{ object_key: string }>()
+    : await db.prepare('SELECT object_key FROM trip_media WHERE trip_id = ? OR (trip_id IS NULL AND trip_index = ?)').bind(tripId, legacyTripIndex).all<{ object_key: string }>();
   const mediaBucket = (env as unknown as { MEDIA: R2Bucket }).MEDIA;
   if (rows.results.length) await mediaBucket.delete(rows.results.map((row) => row.object_key));
-  await db.prepare('DELETE FROM trip_media WHERE trip_index = ?').bind(tripIndex).run();
-}
-
-async function orderedTrips() {
-  return await supabase('friend_trips?select=id&order=trip_date.asc,created_at.asc', { method: 'GET' }) as Array<{ id: string }>;
-}
-
-async function syncTripMediaIndices(before: Array<{ id: string }>, after: Array<{ id: string }>) {
-  const oldIndex = new Map(before.map((trip, index) => [trip.id, index]));
-  const db = await ensureMediaSchema();
-  const statements = [db.prepare('UPDATE trip_media SET trip_index = trip_index + 10000')];
-  after.forEach((trip, newIndex) => {
-    const previous = oldIndex.get(trip.id);
-    if (previous !== undefined) statements.push(db.prepare('UPDATE trip_media SET trip_index = ? WHERE trip_index = ?').bind(newIndex, previous + 10000));
-  });
-  await db.batch(statements);
+  if (legacyTripIndex === undefined) await db.prepare('DELETE FROM trip_media WHERE trip_id = ?').bind(tripId).run();
+  else await db.prepare('DELETE FROM trip_media WHERE trip_id = ? OR (trip_id IS NULL AND trip_index = ?)').bind(tripId, legacyTripIndex).run();
 }
 
 async function milestoneMediaKey(id: string) {
@@ -84,9 +72,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json() as Payload;
     if (!body.entity || !body.data) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
-    const before = body.entity === 'friendTrip' ? await orderedTrips() : [];
     const rows = await supabase(tableFor(body.entity), { method: 'POST', body: JSON.stringify(cleanData(body.entity, body.data, true)) });
-    if (body.entity === 'friendTrip') await syncTripMediaIndices(before, await orderedTrips());
     return Response.json({ item: rows?.[0] });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : 'Không thể thêm dữ liệu.' }, { status: 502 });
@@ -98,9 +84,7 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json() as Payload;
     if (!body.entity || !body.id || !body.data) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
-    const before = body.entity === 'friendTrip' ? await orderedTrips() : [];
     const rows = await supabase(`${tableFor(body.entity)}?id=eq.${encodeURIComponent(body.id)}`, { method: 'PATCH', body: JSON.stringify(cleanData(body.entity, body.data)) });
-    if (body.entity === 'friendTrip') await syncTripMediaIndices(before, await orderedTrips());
     return Response.json({ item: rows?.[0] });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : 'Không thể cập nhật dữ liệu.' }, { status: 502 });
@@ -113,11 +97,8 @@ export async function DELETE(request: Request) {
     const body = await request.json() as Payload;
     if (!body.entity || !body.id) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
     const milestoneKey = body.entity === 'milestone' ? await milestoneMediaKey(body.id) : null;
-    const before = body.entity === 'friendTrip' ? await orderedTrips() : [];
-    const actualTripIndex = before.findIndex((trip) => trip.id === body.id);
-    if (body.entity === 'friendTrip' && actualTripIndex >= 0) await deleteTripMedia(actualTripIndex);
+    if (body.entity === 'friendTrip') await deleteTripMedia(body.id, body.tripIndex);
     await supabase(`${tableFor(body.entity)}?id=eq.${encodeURIComponent(body.id)}`, { method: 'DELETE' });
-    if (body.entity === 'friendTrip') await syncTripMediaIndices(before, await orderedTrips());
     if (milestoneKey?.startsWith('milestones/')) await (env as unknown as { MEDIA: R2Bucket }).MEDIA.delete(milestoneKey);
     return Response.json({ deleted: true });
   } catch (error) {
