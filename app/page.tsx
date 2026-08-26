@@ -1,3 +1,5 @@
+import { CloudRain, Coffee, Flower2, Music2 } from 'lucide-react';
+
 const milestones = [
   { year: '2001', title: 'Một cô gái nhỏ ra đời', text: 'Ngày thế giới bỗng có thêm một người thật đặc biệt.', icon: '✦', media: 'Ảnh tuổi thơ', type: 'ẢNH' },
   { year: '2019', title: 'Bước qua tuổi mười tám', text: 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', icon: '☼', media: 'Khoảnh khắc tuổi 18', type: 'VIDEO' },
@@ -42,7 +44,12 @@ export default function Home() {
             <div><dt>Nơi làm việc</dt><dd>TP. Hồ Chí Minh</dd></div>
           </dl>
           <p>Cô ấy yêu những buổi chiều có gió, thích nhâm nhi một ly cà phê thật lâu và luôn mỉm cười khi nhìn thấy hoa nở. Chỉ cần cô ấy là chính mình cũng đã đủ khiến một ngày trở nên đáng nhớ.</p>
-          <div className="traits"><span>☕ Cà phê sữa</span><span>☁ Những ngày mưa</span><span>♫ Nhạc dịu dàng</span><span>✿ Hoa cúc trắng</span></div>
+          <div className="traits">
+            <span><Coffee aria-hidden="true" />Cà phê sữa</span>
+            <span><CloudRain aria-hidden="true" />Những ngày mưa</span>
+            <span><Music2 aria-hidden="true" />Nhạc dịu dàng</span>
+            <span><Flower2 aria-hidden="true" />Hoa cúc trắng</span>
+          </div>
         </div>
       </section>
 
