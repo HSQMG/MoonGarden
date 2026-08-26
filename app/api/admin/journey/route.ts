@@ -60,6 +60,13 @@ async function deleteTripMedia(tripIndex: number) {
   ]);
 }
 
+async function milestoneMediaKey(id: string) {
+  const rows = await supabase(`milestones?id=eq.${encodeURIComponent(id)}&select=image_path`, { method: 'GET' });
+  const path = rows?.[0]?.image_path;
+  if (typeof path !== 'string' || !path.startsWith('/api/milestone-media?')) return null;
+  return new URL(path, 'https://local.invalid').searchParams.get('key');
+}
+
 export async function POST(request: Request) {
   if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
   try {
@@ -89,8 +96,10 @@ export async function DELETE(request: Request) {
   try {
     const body = await request.json() as Payload;
     if (!body.entity || !body.id) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
+    const milestoneKey = body.entity === 'milestone' ? await milestoneMediaKey(body.id) : null;
     if (body.entity === 'friendTrip' && Number.isInteger(body.tripIndex)) await deleteTripMedia(body.tripIndex!);
     await supabase(`${tableFor(body.entity)}?id=eq.${encodeURIComponent(body.id)}`, { method: 'DELETE' });
+    if (milestoneKey?.startsWith('milestones/')) await (env as unknown as { MEDIA: R2Bucket }).MEDIA.delete(milestoneKey);
     return Response.json({ deleted: true });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : 'Không thể xóa dữ liệu.' }, { status: 502 });

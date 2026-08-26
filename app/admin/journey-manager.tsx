@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { CalendarDays, Edit3, Flag, LoaderCircle, Plus, Trash2, X } from 'lucide-react';
+import { CalendarDays, Edit3, Flag, Image as ImageIcon, LoaderCircle, Plus, Trash2, Upload, X } from 'lucide-react';
 
 type Milestone = { id: string; event_year: number; title: string; description: string; icon: string; image_path: string | null; image_alt: string | null; sort_order: number };
 type Trip = { id: string; trip_date: string; title: string; friends: string; description: string; tone: string; sort_order: number };
@@ -36,7 +36,6 @@ export default function JourneyManager() {
       title: String(form.get('title') || ''),
       description: String(form.get('description') || ''),
       icon: String(form.get('icon') || '✦'),
-      image_path: String(form.get('image_path') || '') || null,
       image_alt: String(form.get('image_alt') || '') || null,
       sort_order: Number(form.get('sort_order')),
     } : {
@@ -87,6 +86,47 @@ export default function JourneyManager() {
     }
   };
 
+  const uploadMilestoneImage = async (milestoneId: string, file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    setMessage('');
+    const form = new FormData();
+    form.append('milestoneId', milestoneId);
+    form.append('file', file);
+    try {
+      const response = await fetch('/api/milestone-media', { method: 'POST', body: form });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || 'Không thể tải ảnh lên.');
+      await load();
+      setMessage('Đã thay ảnh cho cột mốc.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Không thể tải ảnh lên.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeMilestoneImage = async (milestoneId: string) => {
+    if (!window.confirm('Bạn có chắc muốn xóa ảnh của cột mốc này?')) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const response = await fetch('/api/milestone-media', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ milestoneId }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || 'Không thể xóa ảnh.');
+      await load();
+      setMessage('Đã xóa ảnh của cột mốc.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Không thể xóa ảnh.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <section className="journeyManager">
       {message && <p className="adminMessage" role="status">{message}</p>}
@@ -94,7 +134,7 @@ export default function JourneyManager() {
       <div className="managerBlock">
         <div className="managerTitle"><div><small>PHẦN 02</small><h2><Flag aria-hidden="true" />Những chặng đường</h2></div><button type="button" onClick={() => setEditor({ entity: 'milestone', item: null })}><Plus aria-hidden="true" />Thêm cột mốc</button></div>
         <div className="managerRows">{milestones.map((item) => (
-          <article key={item.id}><b>{item.icon}</b><div><small>{item.event_year}</small><h3>{item.title}</h3><p>{item.description}</p></div><div className="rowActions"><button type="button" onClick={() => setEditor({ entity: 'milestone', item })}><Edit3 aria-hidden="true" />Sửa</button><button className="danger" type="button" disabled={busy} onClick={() => remove('milestone', item.id)}><Trash2 aria-hidden="true" />Xóa</button></div></article>
+          <article key={item.id}><div className="milestoneAdminThumb">{item.image_path ? <img src={item.image_path} alt={item.image_alt || item.title} /> : <b>{item.icon}</b>}</div><div><small>{item.event_year}</small><h3>{item.title}</h3><p>{item.description}</p></div><div className="rowActions milestoneActions"><label><Upload aria-hidden="true" />{item.image_path ? 'Thay ảnh' : 'Thêm ảnh'}<input type="file" accept="image/*" disabled={busy} onChange={(event) => { uploadMilestoneImage(item.id, event.target.files?.[0]); event.target.value = ''; }} /></label>{item.image_path && <button className="danger" type="button" disabled={busy} onClick={() => removeMilestoneImage(item.id)}><ImageIcon aria-hidden="true" />Xóa ảnh</button>}<button type="button" onClick={() => setEditor({ entity: 'milestone', item })}><Edit3 aria-hidden="true" />Sửa</button><button className="danger" type="button" disabled={busy} onClick={() => remove('milestone', item.id)}><Trash2 aria-hidden="true" />Xóa mục</button></div></article>
         ))}</div>
       </div>
 
@@ -115,7 +155,7 @@ export default function JourneyManager() {
 }
 
 function MilestoneFields({ item, nextOrder }: { item: Milestone | null; nextOrder: number }) {
-  return <div className="editorFields"><label>Năm<input name="event_year" type="number" min="1900" max="2200" required defaultValue={item?.event_year || new Date().getFullYear()} /></label><label>Biểu tượng<input name="icon" maxLength={8} defaultValue={item?.icon || '✦'} /></label><label className="wide">Tiêu đề<input name="title" required defaultValue={item?.title || ''} /></label><label className="wide">Mô tả<textarea name="description" rows={3} defaultValue={item?.description || ''} /></label><label className="wide">Đường dẫn ảnh<input name="image_path" placeholder="/images/... hoặc https://..." defaultValue={item?.image_path || ''} /></label><label className="wide">Chú thích ảnh<input name="image_alt" defaultValue={item?.image_alt || ''} /></label><label>Thứ tự<input name="sort_order" type="number" min="0" required defaultValue={item?.sort_order ?? nextOrder} /></label></div>;
+  return <div className="editorFields"><label>Năm<input name="event_year" type="number" min="1900" max="2200" required defaultValue={item?.event_year || new Date().getFullYear()} /></label><label>Biểu tượng<input name="icon" maxLength={8} defaultValue={item?.icon || '✦'} /></label><label className="wide">Tiêu đề<input name="title" required defaultValue={item?.title || ''} /></label><label className="wide">Mô tả<textarea name="description" rows={3} defaultValue={item?.description || ''} /></label><label className="wide">Chú thích ảnh<input name="image_alt" placeholder="Có thể thêm sau khi tải ảnh" defaultValue={item?.image_alt || ''} /></label><label>Thứ tự<input name="sort_order" type="number" min="0" required defaultValue={item?.sort_order ?? nextOrder} /></label></div>;
 }
 
 function TripFields({ item, nextOrder }: { item: Trip | null; nextOrder: number }) {
