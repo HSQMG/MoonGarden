@@ -9,22 +9,26 @@ const milestones = [
     media: [
       {
         type: 'image',
-        src: '/images/vy.jpg',
+        src: '/images/avatar/vy.jpg',
         caption: 'Một bức ảnh đáng nhớ của Vy',
       },
     ],
   },
   {
-    year: '2019', title: 'Bước qua tuổi mười tám', text: 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', icon: '☼',
-    media: [{ type: 'image', src: '', caption: 'Khoảnh khắc tuổi 18' }],
+    year: '2018', title: 'Bước qua tuổi mười tám', text: 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', icon: '☼',
+    media: [{ type: 'image', src: '/images/year-2018/img_01.jpg', caption: 'Khoảnh khắc tuổi 18' }],
   },
   {
-    year: '2022', title: 'Chuyến đi đáng nhớ', text: 'Lần đầu chạm vào một vùng đất mới, gom nắng và gió vào ký ức.', icon: '⌁',
-    media: [{ type: 'image', src: '', caption: 'Kỷ niệm của chuyến đi' }],
+    year: '2021', title: 'Tốt nghiệp trung học phổ thông', text: 'Trưởng thành hơn mỗi ngày.', icon: '⌁',
+    media: [{ type: 'image', src: '/images/year-2021/img_01.jpg', caption: 'Cô gái năm ấy đã trưởng thành.' }],
   },
   {
-    year: '2024', title: 'Ngày mình biết đến Vy', text: 'Một cột mốc nhỏ thôi, nhưng lại khiến thế giới của ai đó đổi khác.', icon: '♡',
-    media: [{ type: 'image', src: '', caption: 'Một khoảnh khắc rất riêng' }],
+    year: '2021', title: 'Bắt đầu một hành trình mới ở cấp bậc đại học', text: 'Cô ấy đã bắt đầu một chặng đường mới đầy hứa hẹn.', icon: '♡',
+    media: [{ type: 'image', src: '/images/year-2021/img_02.jpg', caption: 'Một cột mốc quan trọng cho một hành trình mới.' }],
+  },
+  {
+    year: '2025', title: 'Tốt nghiệp đại học', text: 'Cô ấy đã hoàn thành chặng đường học tập đầy thử thách.', icon: '⌁',
+    media: [{ type: 'image', src: '/images/year-2025/img_01.jpg', caption: 'Khoảnh khắc tốt nghiệp là một cột mốc quan trọng.' }],
   },
 ];
 
@@ -55,7 +59,7 @@ export default function Home() {
         <div className="sectionLabel"><span>01</span> VỀ VY</div>
         <div className="portraitCard" aria-label="Ảnh chân dung của Vy">
           <img
-            src="/images/vy.jpg"
+            src="/images/avatar/vy.jpg"
             alt="Ảnh của Vy"
             className="portraitImage"
           />
