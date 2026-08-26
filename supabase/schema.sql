@@ -62,11 +62,11 @@ alter table public.trip_media enable row level security;
 insert into public.milestones
   (slug, event_year, title, description, icon, image_path, image_alt, sort_order)
 values
-  ('vy-ra-doi', 2003, 'Một cô gái nhỏ ra đời', 'Ngày thế giới bỗng có thêm một người thật đặc biệt.', '✦', 'milestones/2003/vy.jpg', 'Một bức ảnh đáng nhớ của Vy', 1),
-  ('tuoi-muoi-tam', 2018, 'Bước qua tuổi mười tám', 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', '☼', 'milestones/2018/img_01.jpg', 'Khoảnh khắc tuổi 18', 2),
-  ('tot-nghiep-thpt', 2021, 'Tốt nghiệp trung học phổ thông', 'Trưởng thành hơn mỗi ngày.', '⌁', 'milestones/2021/img_01.jpg', 'Cô gái năm ấy đã trưởng thành.', 3),
-  ('bat-dau-dai-hoc', 2021, 'Bắt đầu một hành trình mới ở cấp bậc đại học', 'Cô ấy đã bắt đầu một chặng đường mới đầy hứa hẹn.', '♡', 'milestones/2021/img_02.jpg', 'Một cột mốc quan trọng cho một hành trình mới.', 4),
-  ('tot-nghiep-dai-hoc', 2025, 'Tốt nghiệp đại học', 'Cô ấy đã hoàn thành chặng đường học tập đầy thử thách.', '⌁', 'milestones/2025/img_01.jpg', 'Khoảnh khắc tốt nghiệp là một cột mốc quan trọng.', 5)
+  ('vy-ra-doi', 2003, 'Một cô gái nhỏ ra đời', 'Ngày thế giới bỗng có thêm một người thật đặc biệt.', '✦', '/images/avatar/vy.jpg', 'Một bức ảnh đáng nhớ của Vy', 1),
+  ('tuoi-muoi-tam', 2018, 'Bước qua tuổi mười tám', 'Mang theo những ước mơ đầu tiên và bắt đầu hành trình của riêng mình.', '☼', '/images/year-2018/img_01.jpg', 'Khoảnh khắc tuổi 18', 2),
+  ('tot-nghiep-thpt', 2021, 'Tốt nghiệp trung học phổ thông', 'Trưởng thành hơn mỗi ngày.', '⌁', '/images/year-2021/img_01.jpg', 'Cô gái năm ấy đã trưởng thành.', 3),
+  ('bat-dau-dai-hoc', 2021, 'Bắt đầu một hành trình mới ở cấp bậc đại học', 'Cô ấy đã bắt đầu một chặng đường mới đầy hứa hẹn.', '♡', '/images/year-2021/img_02.jpg', 'Một cột mốc quan trọng cho một hành trình mới.', 4),
+  ('tot-nghiep-dai-hoc', 2025, 'Tốt nghiệp đại học', 'Cô ấy đã hoàn thành chặng đường học tập đầy thử thách.', '⌁', '/images/year-2025/img_01.jpg', 'Khoảnh khắc tốt nghiệp là một cột mốc quan trọng.', 5)
 on conflict (slug) do update set
   event_year = excluded.event_year,
   title = excluded.title,
@@ -96,3 +96,11 @@ on conflict (slug) do update set
 comment on table public.milestones is 'Các cột mốc quan trọng trong hành trình của Vy';
 comment on table public.friend_trips is 'Những lần Vy đi cùng bạn bè';
 comment on table public.trip_media is 'Thông tin ảnh và video thuộc từng chuyến đi';
+
+-- Website chỉ được đọc dữ liệu bằng publishable key.
+drop policy if exists "public read milestones" on public.milestones;
+create policy "public read milestones" on public.milestones for select to anon using (true);
+drop policy if exists "public read friend trips" on public.friend_trips;
+create policy "public read friend trips" on public.friend_trips for select to anon using (true);
+drop policy if exists "public read trip media" on public.trip_media;
+create policy "public read trip media" on public.trip_media for select to anon using (true);

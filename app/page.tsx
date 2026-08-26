@@ -63,13 +63,19 @@ const friendTrips = [
 ];
 
 type TripMedia = { key: string; tripIndex: number; type: 'image' | 'video'; url: string };
+type JourneyResponse = {
+  milestones: Array<{ id: string; event_year: number; title: string; description: string; icon: string; image_path: string | null; image_alt: string | null }>;
+  friendTrips: Array<{ id: string; trip_date: string; title: string; friends: string; description: string; tone: string }>;
+};
 
 export default function Home() {
   const [viewer, setViewer] = useState<{ tripIndex: number; mediaIndex: number } | null>(null);
   const [tripMedia, setTripMedia] = useState<Record<number, TripMedia[]>>({});
+  const [journeyMilestones, setJourneyMilestones] = useState(milestones);
+  const [journeyTrips, setJourneyTrips] = useState(friendTrips);
   const [uploading, setUploading] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');
-  const activeTrip = viewer ? friendTrips[viewer.tripIndex] : null;
+  const activeTrip = viewer ? journeyTrips[viewer.tripIndex] : null;
   const activeList = viewer ? (tripMedia[viewer.tripIndex] || []) : [];
   const activeMedia = viewer ? activeList[viewer.mediaIndex] : null;
 
@@ -82,8 +88,26 @@ export default function Home() {
     setTripMedia(grouped);
   };
 
+  const loadJourney = async () => {
+    const response = await fetch('/api/journey', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json() as JourneyResponse;
+    if (data.milestones.length) {
+      setJourneyMilestones(data.milestones.map((item) => ({
+        year: String(item.event_year), title: item.title, text: item.description, icon: item.icon,
+        media: [{ type: 'image', src: item.image_path || '', caption: item.image_alt || item.title }],
+      })));
+    }
+    if (data.friendTrips.length) {
+      setJourneyTrips(data.friendTrips.map((trip) => ({
+        date: trip.trip_date.split('-').reverse().join(' · '), title: trip.title,
+        friends: trip.friends, caption: trip.description, tone: trip.tone,
+      })));
+    }
+  };
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { loadMedia(); }, []);
+  useEffect(() => { loadMedia(); loadJourney(); }, []);
 
   const uploadMedia = async (tripIndex: number, files: FileList | null) => {
     if (!files?.length) return;
@@ -178,7 +202,7 @@ export default function Home() {
 
       <section className="timelineSection" id="timeline">
         <div className="sectionHead"><div className="sectionLabel light"><span>02</span> NHỮNG CHẶNG ĐƯỜNG</div><h2>Mỗi chặng đường<br /><i>đều làm nên Vy của hôm nay.</i></h2></div>
-        <div className="timeline">{milestones.map((item, index) => (
+        <div className="timeline">{journeyMilestones.map((item, index) => (
           <article className={`milestone ${index % 2 ? 'right' : ''}`} key={item.year}>
             <div className="milestoneIcon">{item.icon}</div>
             <div className="milestoneCard">
@@ -206,7 +230,7 @@ export default function Home() {
       <section className="friends section" id="friends">
         <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG LẦN ĐI CÙNG BẠN BÈ</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
         {uploadError && <p className="uploadError" role="alert">{uploadError}</p>}
-        <div className="tripGrid">{friendTrips.map((trip, index) => {
+        <div className="tripGrid">{journeyTrips.map((trip, index) => {
           const media = tripMedia[index] || [];
           return (
             <article className={`tripCard ${trip.tone}`} key={trip.date}>
