@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Utensils, X } from 'lucide-react';
+import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Heart, Headphones, Images, Mic2, Play, Sprout, Trees, Utensils, X } from 'lucide-react';
 
 type TripMedia = { key: string; tripId: string | null; type: 'image' | 'video'; url: string };
 type Milestone = { id: string; year: string; title: string; text: string; icon: string; media: Array<{ type: 'image'; src: string; caption: string }> };
 type FriendTrip = { id: string; date: string; title: string; friends: string; caption: string; tone: string };
+type Reflection = { id: string; reflected_at: string; title: string; source_type: 'photo' | 'post'; feeling: string; image_url: string | null };
 type JourneyResponse = {
   milestones: Array<{ id: string; event_year: number; title: string; description: string; icon: string; image_path: string | null; image_alt: string | null }>;
   friendTrips: Array<{ id: string; trip_date: string; title: string; friends: string; description: string; tone: string }>;
@@ -18,6 +19,7 @@ export default function Home() {
   const [journeyTrips, setJourneyTrips] = useState<FriendTrip[]>([]);
   const [journeyLoading, setJourneyLoading] = useState(true);
   const [journeyError, setJourneyError] = useState('');
+  const [reflections, setReflections] = useState<Reflection[]>([]);
   const activeTrip = viewer ? journeyTrips[viewer.tripIndex] : null;
   const activeList = viewer && activeTrip ? (tripMedia[activeTrip.id] || []) : [];
   const activeMedia = viewer ? activeList[viewer.mediaIndex] : null;
@@ -62,8 +64,21 @@ export default function Home() {
     }
   };
 
+  const loadReflections = async () => {
+    const response = await fetch('/api/reflections', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json() as { reflections: Reflection[] };
+    setReflections(data.reflections);
+  };
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { loadMedia(); loadJourney(); }, []);
+  useEffect(() => { loadMedia(); loadJourney(); loadReflections(); }, []);
+
+  const reflectionYears = reflections.reduce<Record<string, Reflection[]>>((groups, item) => {
+    const year = item.reflected_at.slice(0, 4);
+    (groups[year] ||= []).push(item);
+    return groups;
+  }, {});
 
   const changeMedia = (direction: number) => {
     setViewer((current) => {
@@ -94,7 +109,7 @@ export default function Home() {
     <main>
       <nav className="nav" aria-label="Điều hướng chính">
         <a className="brand" href="#top"><span className="brandMark">V</span><span className="brandWords"><small>Một câu chuyện dành riêng cho</small>Hành trình của Vy</span></a>
-        <div className="navLinks"><a href="#about"><span>01</span> Về Vy</a><a href="#timeline"><span>02</span> Chặng đường</a><a href="#friends"><span>03</span> Bạn bè</a></div>
+        <div className="navLinks"><a href="#about"><span>01</span> Về Vy</a><a href="#timeline"><span>02</span> Chặng đường</a><a href="#friends"><span>03</span> Bạn bè</a><a href="#reflections"><span>04</span> Cảm nhận</a></div>
       </nav>
 
       <section className="hero" id="top">
@@ -212,6 +227,25 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <section className="reflectionsSection" id="reflections">
+        <div className="reflectionsIntro">
+          <div className="sectionLabel light"><span>04</span> CẢM NHẬN QUA TỪNG KHOẢNH KHẮC</div>
+          <h2>Những điều tôi đã nghĩ,<br /><i>khi nhìn thấy Vy.</i></h2>
+          <p>Mỗi bức ảnh, mỗi bài đăng đều giữ lại một cảm xúc rất riêng — được viết xuống theo từng mốc thời gian.</p>
+        </div>
+        {reflections.length ? <div className="reflectionYears">{Object.entries(reflectionYears).map(([year, items]) => (
+          <div className="reflectionYear" key={year}>
+            <div className="yearMarker"><span>{year}</span></div>
+            <div className="reflectionGrid">{items.map((item) => (
+              <article className="reflectionCard" key={item.id}>
+                {item.image_url ? <div className="reflectionImage"><img src={item.image_url} alt={item.title} loading="lazy" /><span>{item.source_type === 'post' ? 'Bài đăng' : 'Bức ảnh'}</span></div> : <div className="reflectionImage empty"><Heart aria-hidden="true" /><span>{item.source_type === 'post' ? 'Bài đăng' : 'Bức ảnh'}</span></div>}
+                <div className="reflectionCopy"><time>{item.reflected_at.split('-').reverse().join(' · ')}</time><h3>{item.title}</h3><p>{item.feeling}</p></div>
+              </article>
+            ))}</div>
+          </div>
+        ))}</div> : <div className="reflectionEmpty"><Heart aria-hidden="true" /><p>Những cảm nhận đầu tiên sẽ sớm được viết ở đây.</p></div>}
+      </section>
 
       <section className="letter" id="letter"><div className="letterPaper"><span className="tape" /><p className="script">Gửi Vy,</p><h2>Cảm ơn Vy vì đã xuất hiện.</h2><p>Có thể Vy chưa từng biết, nhưng sự hiện diện của Vy đã khiến rất nhiều khoảnh khắc bình thường trở nên có ý nghĩa. Trang nhỏ này chỉ là cách một người muốn lưu lại những điều đẹp đẽ về Vy.</p><p className="signature">— Từ một người luôn âm thầm dõi theo Vy ♡</p></div></section>
       <footer><p>Được tạo bằng tất cả sự chân thành</p><span>✦ 2026 ✦</span></footer>
