@@ -1,4 +1,7 @@
-import { Camera, Cat, Flower2, Headphones, Mic2, Sprout, Trees, Utensils } from 'lucide-react';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Utensils, X } from 'lucide-react';
 
 const milestones = [
   {
@@ -33,12 +36,39 @@ const milestones = [
 ];
 
 const friendTrips = [
-  { date: '12 · 03 · 2023', title: 'Một ngày trốn phố', friends: 'Cùng hội bạn thân', caption: 'Chuyến đi ngẫu hứng, những câu chuyện không đầu không cuối và thật nhiều tiếng cười.', tone: 'lavender', type: 'BỘ ẢNH', symbol: '☼' },
-  { date: '27 · 08 · 2024', title: 'Hẹn nhau bên biển', friends: 'Cùng những người bạn đại học', caption: 'Chiều hôm ấy, biển xanh và tuổi trẻ dường như đều không có điểm dừng.', tone: 'blue', type: 'VIDEO', symbol: '▶' },
-  { date: '05 · 01 · 2025', title: 'Chuyến đi đầu năm', friends: 'Cùng nhóm bạn thân', caption: 'Một khởi đầu mới được đánh dấu bằng nắng, gió và những người luôn ở bên.', tone: 'amber', type: 'ẢNH', symbol: '✦' },
+  { date: '12 · 03 · 2023', title: 'Một ngày trốn phố', friends: 'Cùng hội bạn thân', caption: 'Chuyến đi ngẫu hứng, những câu chuyện không đầu không cuối và thật nhiều tiếng cười.', tone: 'lavender', media: [{ type: 'image', src: '', caption: 'Khoảnh khắc đầu tiên' }, { type: 'image', src: '', caption: 'Một nụ cười thật đẹp' }, { type: 'video', src: '', caption: 'Đoạn phim của chuyến đi' }] },
+  { date: '27 · 08 · 2024', title: 'Hẹn nhau bên biển', friends: 'Cùng những người bạn đại học', caption: 'Chiều hôm ấy, biển xanh và tuổi trẻ dường như đều không có điểm dừng.', tone: 'blue', media: [{ type: 'image', src: '', caption: 'Buổi chiều bên biển' }, { type: 'video', src: '', caption: 'Sóng biển và tiếng cười' }] },
+  { date: '05 · 01 · 2025', title: 'Chuyến đi đầu năm', friends: 'Cùng nhóm bạn thân', caption: 'Một khởi đầu mới được đánh dấu bằng nắng, gió và những người luôn ở bên.', tone: 'amber', media: [{ type: 'image', src: '', caption: 'Ngày đầu tiên của chuyến đi' }, { type: 'image', src: '', caption: 'Khoảnh khắc cùng nhau' }] },
 ];
 
 export default function Home() {
+  const [viewer, setViewer] = useState<{ tripIndex: number; mediaIndex: number } | null>(null);
+  const activeTrip = viewer ? friendTrips[viewer.tripIndex] : null;
+  const activeMedia = activeTrip && viewer ? activeTrip.media[viewer.mediaIndex] : null;
+
+  const changeMedia = (direction: number) => {
+    setViewer((current) => {
+      if (!current) return null;
+      const total = friendTrips[current.tripIndex].media.length;
+      return { ...current, mediaIndex: (current.mediaIndex + direction + total) % total };
+    });
+  };
+
+  useEffect(() => {
+    if (!viewer) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setViewer(null);
+      if (event.key === 'ArrowLeft') changeMedia(-1);
+      if (event.key === 'ArrowRight') changeMedia(1);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [viewer]);
+
   return (
     <main>
       <nav className="nav" aria-label="Điều hướng chính">
@@ -119,11 +149,48 @@ export default function Home() {
         <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG LẦN ĐI CÙNG BẠN BÈ</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
         <div className="tripGrid">{friendTrips.map((trip, index) => (
           <article className={`tripCard ${trip.tone}`} key={trip.date}>
-            <div className="tripMedia"><span className="tripIndex">0{index + 1}</span><b>{trip.symbol}</b><span className="mediaType">{trip.type}</span></div>
-            <div className="tripCopy"><time>{trip.date}</time><h3>{trip.title}</h3><p className="friendsWith">{trip.friends}</p><p>{trip.caption}</p><small>Chú thích cho ảnh / video</small></div>
+            <button className="tripMedia" type="button" onClick={() => setViewer({ tripIndex: index, mediaIndex: 0 })} aria-label={`Xem ${trip.media.length} ảnh và video của ${trip.title}`}>
+              <span className="tripIndex">0{index + 1}</span>
+              {trip.media[0].src ? <img src={trip.media[0].src} alt="" /> : <Images aria-hidden="true" />}
+              <span className="mediaType"><Images aria-hidden="true" />{trip.media.length} mục</span>
+              <span className="openGallery">Nhấn để xem tất cả</span>
+            </button>
+            <div className="tripCopy"><time>{trip.date}</time><h3>{trip.title}</h3><p className="friendsWith">{trip.friends}</p><p>{trip.caption}</p><small>{trip.media.length} ảnh / video · Có chú thích riêng</small></div>
           </article>
         ))}</div>
       </section>
+
+      {viewer && activeTrip && activeMedia && (
+        <div className="mediaViewer" role="dialog" aria-modal="true" aria-label={`Thư viện ${activeTrip.title}`} onClick={() => setViewer(null)}>
+          <button className="viewerClose" type="button" onClick={() => setViewer(null)} aria-label="Đóng thư viện"><X aria-hidden="true" /></button>
+          <div className="viewerPanel" onClick={(event) => event.stopPropagation()}>
+            <div className="viewerStage">
+              {activeMedia.src ? (
+                activeMedia.type === 'video' ? (
+                  <video key={activeMedia.src} src={activeMedia.src} controls playsInline autoPlay />
+                ) : (
+                  <img src={activeMedia.src} alt={activeMedia.caption} />
+                )
+              ) : (
+                <div className="viewerPlaceholder">
+                  {activeMedia.type === 'video' ? <Play aria-hidden="true" /> : <Images aria-hidden="true" />}
+                  <span>Thêm {activeMedia.type === 'video' ? 'video' : 'ảnh'} vào đây</span>
+                </div>
+              )}
+              {activeTrip.media.length > 1 && <>
+                <button className="viewerNav prev" type="button" onClick={() => changeMedia(-1)} aria-label="Mục trước"><ChevronLeft aria-hidden="true" /></button>
+                <button className="viewerNav next" type="button" onClick={() => changeMedia(1)} aria-label="Mục tiếp theo"><ChevronRight aria-hidden="true" /></button>
+              </>}
+            </div>
+            <div className="viewerInfo"><div><small>{activeTrip.title}</small><p>{activeMedia.caption}</p></div><span>{viewer.mediaIndex + 1} / {activeTrip.media.length}</span></div>
+            <div className="viewerThumbs">{activeTrip.media.map((media, mediaIndex) => (
+              <button className={mediaIndex === viewer.mediaIndex ? 'active' : ''} type="button" key={`${media.type}-${mediaIndex}`} onClick={() => setViewer({ ...viewer, mediaIndex })} aria-label={`Xem mục ${mediaIndex + 1}`}>
+                {media.src && media.type === 'image' ? <img src={media.src} alt="" /> : media.type === 'video' ? <Play aria-hidden="true" /> : <Images aria-hidden="true" />}
+              </button>
+            ))}</div>
+          </div>
+        </div>
+      )}
 
       <section className="letter" id="letter"><div className="letterPaper"><span className="tape" /><p className="script">Gửi Vy,</p><h2>Cảm ơn Vy vì đã xuất hiện.</h2><p>Có thể Vy chưa từng biết, nhưng sự hiện diện của Vy đã khiến rất nhiều khoảnh khắc bình thường trở nên có ý nghĩa. Trang nhỏ này chỉ là cách một người muốn lưu lại những điều đẹp đẽ về Vy.</p><p className="signature">— Từ một người luôn âm thầm dõi theo Vy ♡</p></div></section>
       <footer><p>Được tạo bằng tất cả sự chân thành</p><span>✦ 2026 ✦</span></footer>
