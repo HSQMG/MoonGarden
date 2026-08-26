@@ -17,12 +17,11 @@ export default function Home() {
       <nav className="nav" aria-label="Điều hướng chính">
         <a className="brand" href="#top"><span className="brandMark">V</span><span className="brandWords"><small>Một câu chuyện dành riêng cho</small>Hành trình của Vy</span></a>
         <div className="navLinks"><a href="#about"><span>01</span> Về Vy</a><a href="#timeline"><span>02</span> Chặng đường</a><a href="#friends"><span>03</span> Bạn bè</a></div>
-        <a className="navHeart" href="#letter" aria-label="Đến lời nhắn dành cho Vy"><span>Gửi Vy</span> ♡</a>
       </nav>
 
       <section className="hero" id="top">
         <div className="heroOrb orbOne" /><div className="heroOrb orbTwo" />
-        <p className="eyebrow">Một nơi nhỏ dành riêng cho Vy</p>
+        <p className="eyebrow">Một nơi nhỏ dành riêng cho người đặc biệt</p>
         <h1>cô gái mang nắng<br />vào những ngày bình thường.</h1>
         <p className="heroText">Có những người ta gặp không phải để lướt qua,<br className="desktop" /> mà để âm thầm ghi nhớ từng điều bé xíu.</p>
         <a className="scrollCue" href="#about"><span>Khám phá câu chuyện</span><b>↓</b></a>
@@ -33,13 +32,16 @@ export default function Home() {
         <div className="sectionLabel"><span>01</span> VỀ VY</div>
         <div className="portraitCard" aria-label="Vị trí dành cho ảnh chân dung của Vy"><div className="portraitGlow" /><div className="flower">❀</div><p>Ảnh của Vy</p><small>Thay bằng ảnh chân dung tại đây</small></div>
         <div className="aboutCopy">
-          <p className="script">Nếu phải kể về Vy...</p><h2>Vy là một bản nhạc<br />dịu dàng giữa thành phố vội.</h2>
+          <p className="script">Nếu phải kể về cô ấy...</p><h2>Cô ấy là một bản nhạc<br />dịu dàng giữa thành phố vội.</h2>
           <dl className="profileFacts">
-            <div><dt>Họ và tên</dt><dd>Tên đầy đủ của Vy</dd></div>
-            <div><dt>Tuổi</dt><dd>00 tuổi</dd></div>
-            <div><dt>Công việc</dt><dd>Công việc của Vy</dd></div>
+            <div><dt>Họ và tên</dt><dd>Hoàng Thuỵ Thuý Vy</dd></div>
+            <div><dt>Biệt danh</dt><dd>MoonGarden</dd></div>
+            <div><dt>Ngày sinh</dt><dd>15 tháng 3, 2003</dd></div>
+            <div><dt>Tuổi</dt><dd>23 tuổi</dd></div>
+            <div><dt>Công việc</dt><dd>Content Creator</dd></div>
+            <div><dt>Nơi làm việc</dt><dd>TP. Hồ Chí Minh</dd></div>
           </dl>
-          <p>Vy yêu những buổi chiều có gió, thích nhâm nhi một ly cà phê thật lâu và luôn mỉm cười khi nhìn thấy hoa nở. Chỉ cần Vy là chính mình cũng đã đủ khiến một ngày trở nên đáng nhớ.</p>
+          <p>Cô ấy yêu những buổi chiều có gió, thích nhâm nhi một ly cà phê thật lâu và luôn mỉm cười khi nhìn thấy hoa nở. Chỉ cần cô ấy là chính mình cũng đã đủ khiến một ngày trở nên đáng nhớ.</p>
           <div className="traits"><span>☕ Cà phê sữa</span><span>☁ Những ngày mưa</span><span>♫ Nhạc dịu dàng</span><span>✿ Hoa cúc trắng</span></div>
         </div>
       </section>
