@@ -5,6 +5,13 @@ const bucket = () => (env as unknown as { MEDIA: R2Bucket }).MEDIA;
 const validTrip = (value: string | null) => value !== null && /^\d+$/.test(value);
 type MediaRow = { id: string; trip_index: number; object_key: string; original_name: string; content_type: string; size_bytes: number; created_at: string };
 
+function isAdmin(request: Request) {
+  if (process.env.NODE_ENV === 'development') return true;
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const currentEmail = request.headers.get('oai-authenticated-user-email')?.trim().toLowerCase();
+  return Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
+}
+
 async function createUniqueObjectKey(tripIndex: string, file: File) {
   const extension = file.name.match(/\.([a-zA-Z0-9]{1,10})$/)?.[1].toLowerCase();
 
@@ -63,6 +70,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý thư viện.' }, { status: 403 });
   const form = await request.formData();
   const tripIndex = String(form.get('tripIndex') ?? '');
   if (!validTrip(tripIndex)) return Response.json({ error: 'Chuyến đi không hợp lệ.' }, { status: 400 });
@@ -100,4 +108,20 @@ export async function POST(request: Request) {
   }
 
   return Response.json({ media: uploaded });
+}
+
+export async function DELETE(request: Request) {
+  if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý thư viện.' }, { status: 403 });
+
+  const body = await request.json() as { key?: string };
+  const key = body.key;
+  if (!key?.startsWith('friend-trips/')) return Response.json({ error: 'Tệp không hợp lệ.' }, { status: 400 });
+
+  const db = await ensureMediaSchema();
+  const row = await db.prepare('SELECT id FROM trip_media WHERE object_key = ?').bind(key).first<{ id: string }>();
+  if (!row) return Response.json({ error: 'Không tìm thấy tệp.' }, { status: 404 });
+
+  await bucket().delete(key);
+  await db.prepare('DELETE FROM trip_media WHERE object_key = ?').bind(key).run();
+  return Response.json({ deleted: true, key });
 }

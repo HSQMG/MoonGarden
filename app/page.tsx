@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Upload, Utensils, X } from 'lucide-react';
+import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Utensils, X } from 'lucide-react';
 
 type TripMedia = { key: string; tripIndex: number; type: 'image' | 'video'; url: string };
 type Milestone = { id: string; year: string; title: string; text: string; icon: string; media: Array<{ type: 'image'; src: string; caption: string }> };
@@ -18,8 +18,6 @@ export default function Home() {
   const [journeyTrips, setJourneyTrips] = useState<FriendTrip[]>([]);
   const [journeyLoading, setJourneyLoading] = useState(true);
   const [journeyError, setJourneyError] = useState('');
-  const [uploading, setUploading] = useState<number | null>(null);
-  const [uploadError, setUploadError] = useState('');
   const activeTrip = viewer ? journeyTrips[viewer.tripIndex] : null;
   const activeList = viewer ? (tripMedia[viewer.tripIndex] || []) : [];
   const activeMedia = viewer ? activeList[viewer.mediaIndex] : null;
@@ -66,25 +64,6 @@ export default function Home() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadMedia(); loadJourney(); }, []);
-
-  const uploadMedia = async (tripIndex: number, files: FileList | null) => {
-    if (!files?.length) return;
-    setUploading(tripIndex);
-    setUploadError('');
-    const form = new FormData();
-    form.append('tripIndex', String(tripIndex));
-    Array.from(files).forEach((file) => form.append('files', file));
-    try {
-      const response = await fetch('/api/trip-media', { method: 'POST', body: form });
-      const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error || 'Không thể tải tệp lên.');
-      await loadMedia();
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Không thể tải tệp lên.');
-    } finally {
-      setUploading(null);
-    }
-  };
 
   const changeMedia = (direction: number) => {
     setViewer((current) => {
@@ -189,7 +168,6 @@ export default function Home() {
 
       <section className="friends section" id="friends">
         <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG LẦN ĐI CÙNG BẠN BÈ</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
-        {uploadError && <p className="uploadError" role="alert">{uploadError}</p>}
         <div className="tripGrid">{journeyTrips.map((trip, index) => {
           const media = tripMedia[index] || [];
           return (
@@ -202,10 +180,6 @@ export default function Home() {
               </button>
               <div className="tripCopy">
                 <time>{trip.date}</time><h3>{trip.title}</h3><p className="friendsWith">{trip.friends}</p><p>{trip.caption}</p>
-                <label className={`uploadMedia ${uploading === index ? 'isUploading' : ''}`}>
-                  <Upload aria-hidden="true" />{uploading === index ? 'Đang tải lên...' : 'Thêm nhiều ảnh / video'}
-                  <input type="file" accept="image/*,video/*" multiple disabled={uploading !== null} onChange={(event) => { uploadMedia(index, event.target.files); event.target.value = ''; }} />
-                </label>
               </div>
             </article>
           );
