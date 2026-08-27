@@ -100,7 +100,7 @@ export default function AdminClient() {
                 <div className="adminMediaGrid">{tripMedia.map((item) => (
                   <div className="adminMediaItem" key={item.key}>
                     {item.type === 'image' ? <img src={item.url} alt="" /> : <video src={item.url} preload="metadata" />}
-                    <span title={item.name}>{item.type === 'image' ? <ImageIcon aria-hidden="true" /> : <Film aria-hidden="true" />}{item.key.split('/').at(-1)}</span>
+                    <span>{item.type === 'image' ? <ImageIcon aria-hidden="true" /> : <Film aria-hidden="true" />}{item.name || item.key.split('/').at(-1)}</span>
                     <button type="button" disabled={busy !== null} onClick={() => remove(item)} aria-label={`Xóa ${item.name || 'tệp'}`}>
                       {busy === item.key ? <LoaderCircle className="spin" aria-hidden="true" /> : <Trash2 aria-hidden="true" />} Xóa
                     </button>

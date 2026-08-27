@@ -13,9 +13,14 @@ function isAdmin(request: Request) {
   return Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
 }
 
-function createUniqueObjectKey(tripId: string, file: File) {
+async function createUniqueObjectKey(tripId: string, file: File) {
   const extension = file.name.match(/\.([a-zA-Z0-9]{1,10})$/)?.[1].toLowerCase();
-  return `friend-trips/${tripId}/${crypto.randomUUID()}${extension ? `.${extension}` : ''}`;
+
+  while (true) {
+    const randomName = crypto.randomUUID();
+    const key = `friend-trips/${tripId}/${randomName}${extension ? `.${extension}` : ''}`;
+    if (!(await bucket().head(key))) return key;
+  }
 }
 
 async function migrateLegacyMedia(db: D1Database) {
@@ -87,48 +92,43 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý thư viện.' }, { status: 403 });
-  const savedKeys: string[] = [];
-  try {
-    const form = await request.formData();
-    const tripId = String(form.get('tripId') ?? '');
-    if (!validTripId(tripId)) return Response.json({ error: 'Chuyến đi không hợp lệ.' }, { status: 400 });
+  const form = await request.formData();
+  const tripId = String(form.get('tripId') ?? '');
+  if (!validTripId(tripId)) return Response.json({ error: 'Chuyến đi không hợp lệ.' }, { status: 400 });
 
-    const files = form.getAll('files').filter((item): item is File => item instanceof File && item.size > 0);
-    if (!files.length) return Response.json({ error: 'Chưa chọn tệp.' }, { status: 400 });
-    if (files.length > 30) return Response.json({ error: 'Mỗi lần chỉ tải tối đa 30 tệp.' }, { status: 400 });
+  const files = form.getAll('files').filter((item): item is File => item instanceof File);
+  if (!files.length) return Response.json({ error: 'Chưa chọn tệp.' }, { status: 400 });
+  if (files.length > 30) return Response.json({ error: 'Mỗi lần chỉ tải tối đa 30 tệp.' }, { status: 400 });
 
-    for (const file of files) {
-      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-        return Response.json({ error: `${file.name} không phải ảnh hoặc video.` }, { status: 400 });
-      }
-      if (file.size > 50 * 1024 * 1024) {
-        return Response.json({ error: `${file.name} vượt quá 50 MB.` }, { status: 400 });
-      }
+  for (const file of files) {
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      return Response.json({ error: `${file.name} không phải ảnh hoặc video.` }, { status: 400 });
     }
+    if (file.size > 50 * 1024 * 1024) {
+      return Response.json({ error: `${file.name} vượt quá 50 MB.` }, { status: 400 });
+    }
+  }
 
-    const uploaded = [];
-    const db = await ensureMediaSchema();
-    for (const file of files) {
-      const key = createUniqueObjectKey(tripId, file);
-      await bucket().put(key, file.stream(), { httpMetadata: { contentType: file.type } });
-      savedKeys.push(key);
-      const id = crypto.randomUUID();
-      const createdAt = new Date().toISOString();
+  const uploaded = [];
+  const db = await ensureMediaSchema();
+  for (const file of files) {
+    const key = await createUniqueObjectKey(tripId, file);
+    await bucket().put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    try {
       await db.prepare(`
         INSERT INTO trip_media (id, trip_index, trip_id, object_key, original_name, content_type, size_bytes, created_at)
         VALUES (?, 0, ?, ?, ?, ?, ?, ?)
       `).bind(id, tripId, key, file.name, file.type, file.size, createdAt).run();
-      uploaded.push({ id, key, tripId, type: file.type.startsWith('video/') ? 'video' : 'image', name: key.split('/').at(-1), originalName: file.name, size: file.size, createdAt, url: `/api/trip-media?key=${encodeURIComponent(key)}` });
+    } catch (error) {
+      await bucket().delete(key);
+      throw error;
     }
-    return Response.json({ media: uploaded });
-  } catch (error) {
-    if (savedKeys.length) {
-      await bucket().delete(savedKeys).catch(() => undefined);
-      const db = await ensureMediaSchema().catch(() => null);
-      if (db) await db.batch(savedKeys.map((key) => db.prepare('DELETE FROM trip_media WHERE object_key = ?').bind(key))).catch(() => undefined);
-    }
-    return Response.json({ error: error instanceof Error ? error.message : 'Không thể tải ảnh hoặc video lên.' }, { status: 500 });
+    uploaded.push({ id, key, tripId, type: file.type.startsWith('video/') ? 'video' : 'image', name: file.name, size: file.size, createdAt, url: `/api/trip-media?key=${encodeURIComponent(key)}` });
   }
+
+  return Response.json({ media: uploaded });
 }
 
 export async function DELETE(request: Request) {
