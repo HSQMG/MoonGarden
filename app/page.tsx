@@ -172,14 +172,26 @@ export default function Home() {
         <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG CUỘC GẶP GỠ VÀ NHỮNG KỶ NIỆM XƯA</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
         <div className="tripGrid">{journeyTrips.map((trip, index) => {
           const media = tripMedia[trip.id] || [];
+          const images = media.filter((item) => item.type === 'image');
+          const videos = media.filter((item) => item.type === 'video');
+          const firstImageIndex = images.length ? media.findIndex((item) => item.key === images[0].key) : -1;
+          const firstVideoIndex = videos.length ? media.findIndex((item) => item.key === videos[0].key) : -1;
           return (
             <article className={`tripCard ${trip.tone}`} key={trip.id}>
-              <button className="tripMedia" type="button" disabled={!media.length} onClick={() => setViewer({ tripIndex: index, mediaIndex: 0 })} aria-label={media.length ? `Xem ${media.length} ảnh và video của ${trip.title}` : `Chưa có media cho ${trip.title}`}>
-                <span className="tripIndex">0{index + 1}</span>
-                {media[0]?.type === 'image' ? <img src={media[0].url} alt="" /> : media[0]?.type === 'video' ? <Play aria-hidden="true" /> : <Images aria-hidden="true" />}
-                <span className="mediaType"><Images aria-hidden="true" />{media.length} mục</span>
-                {media.length > 0 && <span className="openGallery">Nhấn để xem tất cả</span>}
-              </button>
+              <div className={`tripPreviewGrid ${videos.length ? 'hasVideo' : ''}`}>
+                <button className="tripMedia" type="button" disabled={!images.length} onClick={() => firstImageIndex >= 0 && setViewer({ tripIndex: index, mediaIndex: firstImageIndex })} aria-label={images.length ? `Xem ${images.length} ảnh của ${trip.title}` : `Chưa có ảnh cho ${trip.title}`}>
+                  <span className="tripIndex">0{index + 1}</span>
+                  {images[0] ? <img src={images[0].url} alt="" /> : <Images aria-hidden="true" />}
+                  <span className="mediaType"><Images aria-hidden="true" />{images.length} ảnh</span>
+                  {images.length > 0 && <span className="openGallery">Xem tất cả ảnh</span>}
+                </button>
+                {videos.length > 0 && <button className="tripMedia tripVideoPreview" type="button" onClick={() => setViewer({ tripIndex: index, mediaIndex: firstVideoIndex })} aria-label={`Xem ${videos.length} video của ${trip.title}`}>
+                  <video src={videos[0].url} preload="metadata" muted playsInline />
+                  <Play className="videoPlayIcon" aria-hidden="true" />
+                  <span className="mediaType"><Play aria-hidden="true" />{videos.length} video</span>
+                  <span className="openGallery">Xem tất cả video</span>
+                </button>}
+              </div>
               <div className="tripCopy">
                 <time>{trip.date}</time><h3>{trip.title}</h3><p className="friendsWith">{trip.friends}</p><p>{trip.caption}</p>
               </div>
