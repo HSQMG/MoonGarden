@@ -34,7 +34,7 @@ async function supabaseGet<T>(table: string, query: string) {
 export async function GET() {
   try {
     const [milestones, friendTrips] = await Promise.all([
-      supabaseGet<SupabaseMilestone[]>('milestones', 'select=*&order=sort_order.asc'),
+      supabaseGet<SupabaseMilestone[]>('milestones', 'select=*&order=event_year.asc,sort_order.asc,created_at.asc'),
       supabaseGet<SupabaseTrip[]>('friend_trips', 'select=*&order=trip_date.asc,created_at.asc'),
     ]);
     return Response.json({ milestones, friendTrips });

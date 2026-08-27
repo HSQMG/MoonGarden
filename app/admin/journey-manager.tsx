@@ -149,15 +149,21 @@ export default function JourneyManager() {
 
       {editor && <div className="editorOverlay" onClick={() => !busy && setEditor(null)}><form className="journeyEditor" onSubmit={save} onClick={(event) => event.stopPropagation()}>
         <div className="editorHead"><div><small>{editor.item ? 'CHỈNH SỬA' : 'THÊM MỚI'}</small><h2>{editor.entity === 'milestone' ? 'Cột mốc' : 'Chuyến đi'}</h2></div><button type="button" disabled={busy} onClick={() => setEditor(null)} aria-label="Đóng"><X aria-hidden="true" /></button></div>
-        {editor.entity === 'milestone' ? <MilestoneFields item={editor.item as Milestone | null} nextOrder={milestones.length + 1} /> : <TripFields item={editor.item as Trip | null} nextOrder={trips.length + 1} />}
+        {editor.entity === 'milestone' ? <MilestoneFields item={editor.item as Milestone | null} milestones={milestones} /> : <TripFields item={editor.item as Trip | null} nextOrder={trips.length + 1} />}
         <div className="editorActions"><button type="button" disabled={busy} onClick={() => setEditor(null)}>Hủy</button><button className="primary" type="submit" disabled={busy}>{busy ? <LoaderCircle className="spin" aria-hidden="true" /> : null}{busy ? 'Đang lưu...' : 'Lưu dữ liệu'}</button></div>
       </form></div>}
     </section>
   );
 }
 
-function MilestoneFields({ item, nextOrder }: { item: Milestone | null; nextOrder: number }) {
-  return <div className="editorFields"><label>Năm<input name="event_year" type="number" min="1900" max="2200" required defaultValue={item?.event_year || new Date().getFullYear()} /></label><label>Biểu tượng<input name="icon" maxLength={8} defaultValue={item?.icon || '✦'} /></label><label className="wide">Tiêu đề<input name="title" required defaultValue={item?.title || ''} /></label><label className="wide">Mô tả<textarea name="description" rows={3} defaultValue={item?.description || ''} /></label><label className="wide">Chú thích ảnh<input name="image_alt" placeholder="Có thể thêm sau khi tải ảnh" defaultValue={item?.image_alt || ''} /></label><label>Thứ tự<input name="sort_order" type="number" min="0" required defaultValue={item?.sort_order ?? nextOrder} /></label></div>;
+function MilestoneFields({ item, milestones }: { item: Milestone | null; milestones: Milestone[] }) {
+  const initialYear = item?.event_year || new Date().getFullYear();
+  const [year, setYear] = useState(initialYear);
+  const countInYear = (value: number) => milestones.filter((milestone) => milestone.event_year === value && milestone.id !== item?.id).length;
+  const [position, setPosition] = useState(item?.sort_order || countInYear(initialYear) + 1);
+  const maxPosition = countInYear(year) + 1;
+
+  return <div className="editorFields"><label>Năm<input name="event_year" type="number" min="1900" max="2200" required value={year} onChange={(event) => { const value = Number(event.target.value); setYear(value); setPosition(countInYear(value) + 1); }} /></label><label>Biểu tượng<input name="icon" maxLength={8} defaultValue={item?.icon || '✦'} /></label><label className="wide">Tiêu đề<input name="title" required defaultValue={item?.title || ''} /></label><label className="wide">Mô tả<textarea name="description" rows={3} defaultValue={item?.description || ''} /></label><label className="wide">Chú thích ảnh<input name="image_alt" placeholder="Có thể thêm sau khi tải ảnh" defaultValue={item?.image_alt || ''} /></label><label>Vị trí trong năm<select name="sort_order" value={Math.min(position, maxPosition)} onChange={(event) => setPosition(Number(event.target.value))}>{Array.from({ length: maxPosition }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label><p className="wide autoSortNote">Cột mốc tự động sắp xếp theo năm. Nếu cùng năm, mục ở vị trí đã chọn sẽ xuất hiện trước và các mục tiếp theo tự lùi xuống.</p></div>;
 }
 
 function TripFields({ item }: { item: Trip | null; nextOrder: number }) {
