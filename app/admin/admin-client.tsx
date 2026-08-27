@@ -5,7 +5,7 @@ import { ArrowLeft, Film, Image as ImageIcon, LoaderCircle, Trash2, Upload } fro
 import JourneyManager from './journey-manager';
 
 type Trip = { id: string; trip_date: string; title: string; friends: string };
-type Media = { key: string; tripId: string | null; type: 'image' | 'video'; url: string; name?: string; size?: number };
+type Media = { key: string; tripId: string | null; type: 'image' | 'video'; url: string; name?: string; originalName?: string; size?: number };
 
 export default function AdminClient() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -98,7 +98,7 @@ export default function AdminClient() {
                 <div className="adminMediaGrid">{tripMedia.map((item) => (
                   <div className="adminMediaItem" key={item.key}>
                     {item.type === 'image' ? <img src={item.url} alt="" /> : <video src={item.url} preload="metadata" />}
-                    <span>{item.type === 'image' ? <ImageIcon aria-hidden="true" /> : <Film aria-hidden="true" />}{item.name || item.key.split('/').at(-1)}</span>
+                    <span title={item.originalName || item.name}>{item.type === 'image' ? <ImageIcon aria-hidden="true" /> : <Film aria-hidden="true" />}{item.key.split('/').at(-1)}</span>
                     <button type="button" disabled={busy !== null} onClick={() => remove(item)} aria-label={`Xóa ${item.name || 'tệp'}`}>
                       {busy === item.key ? <LoaderCircle className="spin" aria-hidden="true" /> : <Trash2 aria-hidden="true" />} Xóa
                     </button>

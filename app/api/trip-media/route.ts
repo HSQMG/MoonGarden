@@ -82,7 +82,8 @@ export async function GET(request: Request) {
     key: row.object_key,
     tripId: row.trip_id,
     type: row.content_type.startsWith('video/') ? 'video' : 'image',
-    name: row.original_name,
+    name: row.object_key.split('/').at(-1) || row.original_name,
+    originalName: row.original_name,
     size: row.size_bytes,
     createdAt: row.created_at,
     url: `/api/trip-media?key=${encodeURIComponent(row.object_key)}`,
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
       await bucket().delete(key);
       throw error;
     }
-    uploaded.push({ id, key, tripId, type: file.type.startsWith('video/') ? 'video' : 'image', name: file.name, size: file.size, createdAt, url: `/api/trip-media?key=${encodeURIComponent(key)}` });
+    uploaded.push({ id, key, tripId, type: file.type.startsWith('video/') ? 'video' : 'image', name: key.split('/').at(-1), originalName: file.name, size: file.size, createdAt, url: `/api/trip-media?key=${encodeURIComponent(key)}` });
   }
 
   return Response.json({ media: uploaded });
