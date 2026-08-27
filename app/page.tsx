@@ -94,7 +94,7 @@ export default function Home() {
     <main>
       <nav className="nav" aria-label="Điều hướng chính">
         <a className="brand" href="#top"><span className="brandMark">V</span><span className="brandWords"><small>Một câu chuyện dành riêng cho</small>Hành trình của Vy</span></a>
-        <div className="navLinks"><a href="#about"><span>01</span> Về Vy</a><a href="#timeline"><span>02</span> Chặng đường</a><a href="#friends"><span>03</span> Bạn bè</a></div>
+        <div className="navLinks"><a href="#about"><span>01</span> Về Vy</a><a href="#timeline"><span>02</span> Chặng đường</a><a href="#friends"><span>03</span> Gặp gỡ &amp; kỷ niệm</a></div>
       </nav>
 
       <section className="hero" id="top">
@@ -169,7 +169,7 @@ export default function Home() {
       </section>
 
       <section className="friends section" id="friends">
-        <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG LẦN ĐI CÙNG BẠN BÈ</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
+        <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG CUỘC GẶP GỠ VÀ NHỮNG KỶ NIỆM XƯA</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
         <div className="tripGrid">{journeyTrips.map((trip, index) => {
           const media = tripMedia[trip.id] || [];
           return (

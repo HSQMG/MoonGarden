@@ -141,7 +141,7 @@ export default function JourneyManager() {
       </div>
 
       <div className="managerBlock">
-        <div className="managerTitle"><div><small>PHẦN 03</small><h2><CalendarDays aria-hidden="true" />Những lần đi cùng bạn bè</h2></div><button type="button" onClick={() => setEditor({ entity: 'friendTrip', item: null })}><Plus aria-hidden="true" />Thêm chuyến đi</button></div>
+        <div className="managerTitle"><div><small>PHẦN 03</small><h2><CalendarDays aria-hidden="true" />Những cuộc gặp gỡ và những kỷ niệm xưa</h2></div><button type="button" onClick={() => setEditor({ entity: 'friendTrip', item: null })}><Plus aria-hidden="true" />Thêm chuyến đi</button></div>
         <div className="managerRows">{trips.map((item, index) => (
           <article key={item.id}><b>0{index + 1}</b><div><small>{item.trip_date.split('-').reverse().join(' · ')}</small><h3>{item.title}</h3><p>{item.friends}</p></div><div className="rowActions"><button type="button" onClick={() => setEditor({ entity: 'friendTrip', item })}><Edit3 aria-hidden="true" />Sửa</button><button className="danger" type="button" disabled={busy} onClick={() => remove('friendTrip', item.id, item.title, index)}><Trash2 aria-hidden="true" />Xóa</button></div></article>
         ))}</div>
