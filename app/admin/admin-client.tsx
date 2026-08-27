@@ -72,7 +72,7 @@ export default function AdminClient() {
     <main className="adminPage">
       <header className="adminHeader">
         <div><p>HÀNH TRÌNH CỦA VY</p><h1>Trang quản lý</h1><span>Quản lý cột mốc, chuyến đi, ảnh và video.</span></div>
-        <a href="/"><ArrowLeft aria-hidden="true" />Xem trang người dùng</a>
+        <div className="adminHeaderActions"><a href="/"><ArrowLeft aria-hidden="true" />Xem trang người dùng</a><form action="/api/admin/logout" method="post"><button type="submit">Đăng xuất</button></form></div>
       </header>
 
       {message && <p className="adminMessage" role="status">{message}</p>}

@@ -1,42 +1,13 @@
-import { env } from 'cloudflare:workers';
-import { ensureMediaSchema } from '../../../../db/media';
+import { isAdminRequest } from '../../../../lib/admin-auth';
+import { storageDelete, supabaseRest } from '../../../../lib/supabase';
 
 type Entity = 'milestone' | 'friendTrip';
 type Payload = { entity?: Entity; id?: string; tripIndex?: number; data?: Record<string, unknown> };
 
 const tableFor = (entity: Entity) => entity === 'milestone' ? 'milestones' : 'friend_trips';
 
-function isAdmin(request: Request) {
-  if (process.env.NODE_ENV === 'development') return true;
-  const expected = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const current = request.headers.get('oai-authenticated-user-email')?.trim().toLowerCase();
-  return Boolean(expected && current && expected === current);
-}
-
-function adminKey() {
-  const key = process.env.SUPABASE_SECRET_KEY;
-  if (!key) throw new Error('Supabase Secret Key chưa được cấu hình.');
-  return key;
-}
-
 async function supabase(path: string, init: RequestInit) {
-  const baseUrl = process.env.SUPABASE_URL;
-  if (!baseUrl) throw new Error('Supabase URL chưa được cấu hình.');
-  const key = adminKey();
-  const response = await fetch(`${baseUrl}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      'content-type': 'application/json',
-      Prefer: 'return=representation',
-      ...(init.headers || {}),
-    },
-    cache: 'no-store',
-  });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.message || `Supabase trả về lỗi ${response.status}.`);
-  return body;
+  return supabaseRest<any>(path, init, true);
 }
 
 function cleanData(entity: Entity, input: Record<string, unknown>, creating = false) {
@@ -50,14 +21,9 @@ function cleanData(entity: Entity, input: Record<string, unknown>, creating = fa
 }
 
 async function deleteTripMedia(tripId: string, legacyTripIndex?: number) {
-  const db = await ensureMediaSchema();
-  const rows = legacyTripIndex === undefined
-    ? await db.prepare('SELECT object_key FROM trip_media WHERE trip_id = ?').bind(tripId).all<{ object_key: string }>()
-    : await db.prepare('SELECT object_key FROM trip_media WHERE trip_id = ? OR (trip_id IS NULL AND trip_index = ?)').bind(tripId, legacyTripIndex).all<{ object_key: string }>();
-  const mediaBucket = (env as unknown as { MEDIA: R2Bucket }).MEDIA;
-  if (rows.results.length) await mediaBucket.delete(rows.results.map((row) => row.object_key));
-  if (legacyTripIndex === undefined) await db.prepare('DELETE FROM trip_media WHERE trip_id = ?').bind(tripId).run();
-  else await db.prepare('DELETE FROM trip_media WHERE trip_id = ? OR (trip_id IS NULL AND trip_index = ?)').bind(tripId, legacyTripIndex).run();
+  void legacyTripIndex;
+  const rows = await supabaseRest<Array<{ storage_path: string }>>(`trip_media?friend_trip_id=eq.${encodeURIComponent(tripId)}&select=storage_path`, {}, true);
+  await storageDelete(rows.map((row) => row.storage_path));
 }
 
 async function milestoneMediaKey(id: string) {
@@ -68,7 +34,7 @@ async function milestoneMediaKey(id: string) {
 }
 
 export async function POST(request: Request) {
-  if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
+  if (!(await isAdminRequest(request))) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
   try {
     const body = await request.json() as Payload;
     if (!body.entity || !body.data) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
@@ -80,7 +46,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
+  if (!(await isAdminRequest(request))) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
   try {
     const body = await request.json() as Payload;
     if (!body.entity || !body.id || !body.data) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
@@ -92,14 +58,14 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!isAdmin(request)) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
+  if (!(await isAdminRequest(request))) return Response.json({ error: 'Bạn không có quyền quản lý dữ liệu.' }, { status: 403 });
   try {
     const body = await request.json() as Payload;
     if (!body.entity || !body.id) return Response.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
     const milestoneKey = body.entity === 'milestone' ? await milestoneMediaKey(body.id) : null;
     if (body.entity === 'friendTrip') await deleteTripMedia(body.id, body.tripIndex);
     await supabase(`${tableFor(body.entity)}?id=eq.${encodeURIComponent(body.id)}`, { method: 'DELETE' });
-    if (milestoneKey?.startsWith('milestones/')) await (env as unknown as { MEDIA: R2Bucket }).MEDIA.delete(milestoneKey);
+    if (milestoneKey?.startsWith('milestones/')) await storageDelete([milestoneKey]);
     return Response.json({ deleted: true });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : 'Không thể xóa dữ liệu.' }, { status: 502 });
