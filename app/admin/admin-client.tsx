@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Film, Image as ImageIcon, LoaderCircle, Trash2, Upload } from 'lucide-react';
 import JourneyManager from './journey-manager';
-import ReflectionManager from './reflection-manager';
 
 type Trip = { id: string; trip_date: string; title: string; friends: string };
 type Media = { key: string; tripId: string | null; type: 'image' | 'video'; url: string; name?: string; size?: number };
@@ -72,14 +71,13 @@ export default function AdminClient() {
   return (
     <main className="adminPage">
       <header className="adminHeader">
-        <div><p>HÀNH TRÌNH CỦA VY</p><h1>Trang quản lý</h1><span>Quản lý cột mốc, chuyến đi, ảnh, video và cảm nhận.</span></div>
+        <div><p>HÀNH TRÌNH CỦA VY</p><h1>Trang quản lý</h1><span>Quản lý cột mốc, chuyến đi, ảnh và video.</span></div>
         <a href="/"><ArrowLeft aria-hidden="true" />Xem trang người dùng</a>
       </header>
 
       {message && <p className="adminMessage" role="status">{message}</p>}
 
       <JourneyManager />
-      <ReflectionManager />
 
       <section className="adminTrips">
         {trips.map((trip, tripIndex) => {
