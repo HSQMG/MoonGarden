@@ -123,6 +123,9 @@ export default function Home() {
             <div><dt>Ngày sinh</dt><dd>15 tháng 3, 2003</dd></div>
             <div><dt>Tuổi</dt><dd>23 tuổi</dd></div>
             <div><dt>Công việc</dt><dd>Content Creator</dd></div>
+            <div><dt>Học vấn</dt><dd>Đại học Kinh tế Hồ Chí Minh</dd></div>
+            <div><dt>Ngành học</dt><dd>Bất động sản</dd></div>
+            <div><dt>Công ty </dt><dd>Nguyễn Kim</dd></div>
             <div><dt>Nơi làm việc</dt><dd>TP. Hồ Chí Minh</dd></div>
           </dl>
           <p>Cô ấy yêu những buổi chiều có gió, thích nhâm nhi một ly cà phê thật lâu và luôn mỉm cười khi nhìn thấy hoa nở. Chỉ cần cô ấy là chính mình cũng đã đủ khiến một ngày trở nên đáng nhớ.</p>
