@@ -67,6 +67,25 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadMedia(); loadJourney(); }, []);
 
+  useEffect(() => {
+    const elements = Array.from(document.querySelectorAll<HTMLElement>('.revealItem'));
+    elements.forEach((element) => element.classList.add('revealReady'));
+    elements.forEach((element, index) => element.style.setProperty('--reveal-delay', `${(index % 4) * 90}ms`));
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('isVisible');
+        } else {
+          entry.target.classList.remove('isVisible');
+        }
+      });
+    }, { threshold: .1, rootMargin: '-5% 0px -8% 0px' });
+
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [journeyMilestones.length, journeyTrips.length]);
+
   const changeMedia = (direction: number) => {
     setViewer((current) => {
       if (!current) return null;
@@ -118,7 +137,7 @@ export default function Home() {
 
   return (
     <main>
-      <nav className="nav" aria-label="Điều hướng chính">
+      <nav className={`nav ${viewer ? 'navHidden' : ''}`} aria-label="Điều hướng chính" aria-hidden={viewer ? 'true' : undefined}>
         <a className="brand" href="#top"><span className="brandMark">V</span><span className="brandWords"><small>Một câu chuyện dành riêng cho</small>Hành trình của Vy</span></a>
         <div className="navLinks"><a href="#about"><span>01</span> Về Vy</a><a href="#timeline"><span>02</span> Chặng đường</a><a href="#friends"><span>03</span> Gặp gỡ &amp; kỷ niệm</a></div>
       </nav>
@@ -133,15 +152,15 @@ export default function Home() {
       </section>
 
       <section className="about section" id="about">
-        <div className="sectionLabel"><span>01</span> VỀ VY</div>
-        <div className="portraitCard" aria-label="Ảnh chân dung của Vy">
+        <div className="sectionLabel revealItem"><span>01</span> VỀ VY</div>
+        <div className="portraitCard revealItem" aria-label="Ảnh chân dung của Vy">
           <img
             src="/images/avatar/vy.jpg"
             alt="Ảnh của Vy"
             className="portraitImage"
           />
         </div>
-        <div className="aboutCopy">
+        <div className="aboutCopy revealItem">
           <p className="script">Nếu phải kể về cô ấy...</p><h2>Cô ấy là một bản nhạc<br />dịu dàng giữa thành phố vội.</h2>
           <dl className="profileFacts">
             <div><dt>Họ và tên</dt><dd>Hoàng Thuỵ Thuý Vy</dd></div>
@@ -151,7 +170,6 @@ export default function Home() {
             <div><dt>Công việc</dt><dd>Content Creator</dd></div>
             <div><dt>Học vấn</dt><dd>Đại học Kinh tế Hồ Chí Minh</dd></div>
             <div><dt>Ngành học</dt><dd>Bất động sản</dd></div>
-            <div><dt>Công ty </dt><dd>Nguyễn Kim</dd></div>
             <div><dt>Nơi làm việc</dt><dd>TP. Hồ Chí Minh</dd></div>
           </dl>
           <p>Cô ấy yêu những buổi chiều có gió, thích nhâm nhi một ly cà phê thật lâu và luôn mỉm cười khi nhìn thấy hoa nở. Chỉ cần cô ấy là chính mình cũng đã đủ khiến một ngày trở nên đáng nhớ.</p>
@@ -169,11 +187,11 @@ export default function Home() {
       </section>
 
       <section className="timelineSection" id="timeline">
-        <div className="sectionHead"><div className="sectionLabel light"><span>02</span> NHỮNG CHẶNG ĐƯỜNG</div><h2>Mỗi chặng đường<br /><i>đều làm nên Vy của hôm nay.</i></h2></div>
+        <div className="sectionHead revealItem"><div className="sectionLabel light"><span>02</span> NHỮNG CHẶNG ĐƯỜNG</div><h2>Mỗi chặng đường<br /><i>đều làm nên Vy của hôm nay.</i></h2></div>
         {journeyLoading && <p className="dataStatus" role="status">Đang tải dữ liệu từ Supabase...</p>}
         {journeyError && <p className="uploadError" role="alert">{journeyError}</p>}
         <div className="timeline">{journeyMilestones.map((item, index) => (
-          <article className={`milestone ${index % 2 ? 'right' : ''}`} key={item.id}>
+          <article className={`milestone revealItem ${index % 2 ? 'right' : ''}`} key={item.id}>
             <div className="milestoneIcon">{item.icon}</div>
             <div className="milestoneCard">
               <div className="milestoneGallery">
@@ -198,7 +216,7 @@ export default function Home() {
       </section>
 
       <section className="friends section" id="friends">
-        <div className="friendsIntro"><div className="sectionLabel"><span>03</span> NHỮNG CUỘC GẶP GỠ VÀ NHỮNG KỶ NIỆM XƯA</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
+        <div className="friendsIntro revealItem"><div className="sectionLabel"><span>03</span> NHỮNG CUỘC GẶP GỠ VÀ NHỮNG KỶ NIỆM XƯA</div><h2>Đi cùng nhau,<br />nhớ cùng nhau.</h2><p>Không chỉ là nơi đã đến, điều đáng nhớ nhất luôn là những người đã có mặt trong hành trình ấy.</p></div>
         <div className="tripGrid">{journeyTrips.map((trip, index) => {
           const media = tripMedia[trip.id] || [];
           const images = media.filter((item) => item.type === 'image');
@@ -206,7 +224,7 @@ export default function Home() {
           const firstImageIndex = images.length ? media.findIndex((item) => item.key === images[0].key) : -1;
           const firstVideoIndex = videos.length ? media.findIndex((item) => item.key === videos[0].key) : -1;
           return (
-            <article className={`tripCard ${trip.tone}`} key={trip.id}>
+            <article className={`tripCard revealItem ${trip.tone}`} key={trip.id}>
               <div className={`tripPreviewGrid ${videos.length ? 'hasVideo' : ''}`}>
                 <button className="tripMedia" type="button" disabled={!images.length} onClick={() => firstImageIndex >= 0 && setViewer({ tripIndex: index, mediaIndex: firstImageIndex })} aria-label={images.length ? `Xem ${images.length} ảnh của ${trip.title}` : `Chưa có ảnh cho ${trip.title}`}>
                   <span className="tripIndex">0{index + 1}</span>
@@ -241,9 +259,9 @@ export default function Home() {
               onTouchCancel={finishSwipe}
             >
               {activeMedia.type === 'video' ? (
-                <video key={activeMedia.url} src={activeMedia.url} controls playsInline autoPlay />
+                <video className="viewerMedia" key={activeMedia.url} src={activeMedia.url} controls playsInline autoPlay />
               ) : (
-                <img src={activeMedia.url} alt="" />
+                <img className="viewerMedia" key={activeMedia.url} src={activeMedia.url} alt="" />
               )}
               {activeList.length > 1 && <>
                 <button className="viewerNav prev" type="button" onClick={() => changeMedia(-1)} aria-label="Mục trước"><ChevronLeft aria-hidden="true" /></button>
@@ -260,8 +278,8 @@ export default function Home() {
         </div>
       )}
 
-      <section className="letter" id="letter"><div className="letterPaper"><span className="tape" /><p className="script">Gửi Vy,</p><h2>Cảm ơn Vy vì đã xuất hiện.</h2><p>Có thể Vy chưa từng biết, nhưng sự hiện diện của Vy đã khiến rất nhiều khoảnh khắc bình thường trở nên có ý nghĩa. Trang nhỏ này chỉ là cách một người muốn lưu lại những điều đẹp đẽ.</p><p className="signature">— Từ một người luôn âm thầm dõi theo Vy </p></div></section>
-      <footer><p>Được tạo bằng tất cả sự chân thành</p><span>✦ 2024 ✦</span></footer>
+      <section className="letter" id="letter"><div className="letterPaper revealItem"><span className="tape" /><p className="script">Gửi Vy,</p><h2>Cảm ơn Vy vì đã xuất hiện.</h2><p>Có thể Vy chưa từng biết, nhưng sự hiện diện của Vy đã khiến rất nhiều khoảnh khắc bình thường trở nên có ý nghĩa. Trang nhỏ này chỉ là cách một người muốn lưu lại những điều đẹp đẽ.</p><p className="signature">— Từ một người luôn âm thầm dõi theo Vy </p></div></section>
+      <footer className="revealItem"><p>Được tạo bằng tất cả sự chân thành</p><span>✦ 2024 ✦</span></footer>
     </main>
   );
 }
