@@ -58,7 +58,8 @@ a {
     gap: 34px
 }
 
-.navLinks a {
+.navLinks a,
+.navLinks button {
     opacity: .72
 }
 
@@ -1025,23 +1026,32 @@ footer {
     background: rgba(115, 60, 70, .055)
 }
 
-.navLinks a {
+.navLinks a,
+.navLinks button {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 10px 13px;
     border-radius: 10px;
     font-size: 12px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    cursor: pointer;
     transition: background .2s ease, color .2s ease, opacity .2s ease
 }
 
-.navLinks a span {
+.navLinks a span,
+.navLinks button span {
     font-size: 8px;
     color: #a78b81
 }
 
 .navLinks a:hover,
-.navLinks a:focus-visible {
+.navLinks a:focus-visible,
+.navLinks button:hover,
+.navLinks button:focus-visible {
     opacity: 1;
     background: #fffaf3;
     color: var(--wine);
@@ -1125,7 +1135,8 @@ footer {
         overflow: hidden
     }
 
-    .navLinks a {
+    .navLinks a,
+    .navLinks button {
         justify-content: center;
         gap: 2px;
         min-width: 0;
@@ -1137,7 +1148,8 @@ footer {
         overflow: hidden
     }
 
-    .navLinks a span {
+    .navLinks a span,
+    .navLinks button span {
         display: none
     }
 
@@ -1579,18 +1591,44 @@ h1 {
 }
 
 .viewerMedia {
-    animation: viewerMediaIn .34s cubic-bezier(.22, 1, .36, 1) both
+    transform: translateX(var(--swipe-offset, 0));
+    transition: transform .28s cubic-bezier(.22, 1, .36, 1);
+    will-change: transform, opacity
 }
 
-@keyframes viewerMediaIn {
+.viewerMedia.isSwiping {
+    transition: none
+}
+
+.viewerMedia.slide-next {
+    animation: viewerMediaNext .36s cubic-bezier(.22, 1, .36, 1) both
+}
+
+.viewerMedia.slide-prev {
+    animation: viewerMediaPrev .36s cubic-bezier(.22, 1, .36, 1) both
+}
+
+@keyframes viewerMediaNext {
     from {
-        opacity: 0;
-        transform: scale(.985)
+        opacity: .35;
+        transform: translateX(42px) scale(.985)
     }
 
     to {
         opacity: 1;
-        transform: scale(1)
+        transform: translateX(0) scale(1)
+    }
+}
+
+@keyframes viewerMediaPrev {
+    from {
+        opacity: .35;
+        transform: translateX(-42px) scale(.985)
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1)
     }
 }
 

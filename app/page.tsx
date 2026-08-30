@@ -14,6 +14,9 @@ type JourneyResponse = {
 export default function Home() {
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const swipeEnd = useRef<{ x: number; y: number } | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'next' | 'prev'>('next');
   const [viewer, setViewer] = useState<{ tripIndex: number; mediaIndex: number } | null>(null);
   const [tripMedia, setTripMedia] = useState<Record<string, TripMedia[]>>({});
   const [journeyMilestones, setJourneyMilestones] = useState<Milestone[]>([]);
@@ -87,6 +90,7 @@ export default function Home() {
   }, [journeyMilestones.length, journeyTrips.length]);
 
   const changeMedia = (direction: number) => {
+    setSwipeDirection(direction > 0 ? 'next' : 'prev');
     setViewer((current) => {
       if (!current) return null;
       const tripId = journeyTrips[current.tripIndex]?.id;
@@ -100,11 +104,18 @@ export default function Home() {
     const touch = event.touches[0];
     swipeStart.current = { x: touch.clientX, y: touch.clientY };
     swipeEnd.current = null;
+    setSwipeOffset(0);
+    setIsSwiping(true);
   };
 
   const trackSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
     const touch = event.touches[0];
     swipeEnd.current = { x: touch.clientX, y: touch.clientY };
+    const start = swipeStart.current;
+    if (!start) return;
+    const distanceX = touch.clientX - start.x;
+    const distanceY = touch.clientY - start.y;
+    if (Math.abs(distanceX) > Math.abs(distanceY)) setSwipeOffset(distanceX);
   };
 
   const finishSwipe = () => {
@@ -112,12 +123,18 @@ export default function Home() {
     const end = swipeEnd.current;
     swipeStart.current = null;
     swipeEnd.current = null;
+    setIsSwiping(false);
+    setSwipeOffset(0);
     if (!start || !end || activeList.length < 2) return;
 
     const distanceX = end.x - start.x;
     const distanceY = end.y - start.y;
     if (Math.abs(distanceX) < 50 || Math.abs(distanceX) <= Math.abs(distanceY) * 1.2) return;
     changeMedia(distanceX < 0 ? 1 : -1);
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   useEffect(() => {
@@ -139,7 +156,7 @@ export default function Home() {
     <main>
       <nav className={`nav ${viewer ? 'navHidden' : ''}`} aria-label="Điều hướng chính" aria-hidden={viewer ? 'true' : undefined}>
         <a className="brand" href="#top"><span className="brandMark">V</span><span className="brandWords"><small>Một câu chuyện dành riêng cho</small>Hành trình của Vy</span></a>
-        <div className="navLinks"><a href="#about"><span>01</span> Về Vy</a><a href="#timeline"><span>02</span> Chặng đường</a><a href="#friends"><span>03</span> Gặp gỡ &amp; kỷ niệm</a></div>
+        <div className="navLinks"><button type="button" onClick={() => scrollToSection('about')}><span>01</span> Về Vy</button><button type="button" onClick={() => scrollToSection('timeline')}><span>02</span> Chặng đường</button><button type="button" onClick={() => scrollToSection('friends')}><span>03</span> Gặp gỡ &amp; kỷ niệm</button></div>
       </nav>
 
       <section className="hero" id="top">
@@ -259,9 +276,9 @@ export default function Home() {
               onTouchCancel={finishSwipe}
             >
               {activeMedia.type === 'video' ? (
-                <video className="viewerMedia" key={activeMedia.url} src={activeMedia.url} controls playsInline autoPlay />
+                <video className={`viewerMedia slide-${swipeDirection} ${isSwiping ? 'isSwiping' : ''}`} style={{ '--swipe-offset': `${swipeOffset}px` } as React.CSSProperties} key={activeMedia.url} src={activeMedia.url} controls playsInline autoPlay />
               ) : (
-                <img className="viewerMedia" key={activeMedia.url} src={activeMedia.url} alt="" />
+                <img className={`viewerMedia slide-${swipeDirection} ${isSwiping ? 'isSwiping' : ''}`} style={{ '--swipe-offset': `${swipeOffset}px` } as React.CSSProperties} key={activeMedia.url} src={activeMedia.url} alt="" />
               )}
               {activeList.length > 1 && <>
                 <button className="viewerNav prev" type="button" onClick={() => changeMedia(-1)} aria-label="Mục trước"><ChevronLeft aria-hidden="true" /></button>
