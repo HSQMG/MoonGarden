@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, Cat, ChevronLeft, ChevronRight, Flower2, Headphones, Images, Mic2, Play, Sprout, Trees, Utensils, X } from 'lucide-react';
 
 type TripMedia = { key: string; tripId: string | null; type: 'image' | 'video'; url: string };
@@ -12,6 +12,8 @@ type JourneyResponse = {
 };
 
 export default function Home() {
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const swipeEnd = useRef<{ x: number; y: number } | null>(null);
   const [viewer, setViewer] = useState<{ tripIndex: number; mediaIndex: number } | null>(null);
   const [tripMedia, setTripMedia] = useState<Record<string, TripMedia[]>>({});
   const [journeyMilestones, setJourneyMilestones] = useState<Milestone[]>([]);
@@ -73,6 +75,30 @@ export default function Home() {
       if (!total) return current;
       return { ...current, mediaIndex: (current.mediaIndex + direction + total) % total };
     });
+  };
+
+  const startSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    swipeStart.current = { x: touch.clientX, y: touch.clientY };
+    swipeEnd.current = null;
+  };
+
+  const trackSwipe = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    swipeEnd.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const finishSwipe = () => {
+    const start = swipeStart.current;
+    const end = swipeEnd.current;
+    swipeStart.current = null;
+    swipeEnd.current = null;
+    if (!start || !end || activeList.length < 2) return;
+
+    const distanceX = end.x - start.x;
+    const distanceY = end.y - start.y;
+    if (Math.abs(distanceX) < 50 || Math.abs(distanceX) <= Math.abs(distanceY) * 1.2) return;
+    changeMedia(distanceX < 0 ? 1 : -1);
   };
 
   useEffect(() => {
@@ -207,7 +233,13 @@ export default function Home() {
         <div className="mediaViewer" role="dialog" aria-modal="true" aria-label={`Thư viện ${activeTrip.title}`} onClick={() => setViewer(null)}>
           <button className="viewerClose" type="button" onClick={() => setViewer(null)} aria-label="Đóng thư viện"><X aria-hidden="true" /></button>
           <div className="viewerPanel" onClick={(event) => event.stopPropagation()}>
-            <div className="viewerStage">
+            <div
+              className="viewerStage"
+              onTouchStart={startSwipe}
+              onTouchMove={trackSwipe}
+              onTouchEnd={finishSwipe}
+              onTouchCancel={finishSwipe}
+            >
               {activeMedia.type === 'video' ? (
                 <video key={activeMedia.url} src={activeMedia.url} controls playsInline autoPlay />
               ) : (

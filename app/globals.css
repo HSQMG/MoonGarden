@@ -1470,7 +1470,10 @@ h1 {
     place-items: center;
     background: #171515;
     border-radius: 18px;
-    overflow: hidden
+    overflow: hidden;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none
 }
 
 .viewerStage>img {
