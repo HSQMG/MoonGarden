@@ -3,6 +3,7 @@
 ## 1. Chuẩn bị Supabase
 
 Mở Supabase SQL Editor và chạy toàn bộ tệp `supabase/node-storage.sql`.
+Thư mực này nếu các bạn cần có thể liên lạc với tôi để tôi đưa cho mẫu.
 
 ## 2. Biến môi trường Render
 
@@ -32,6 +33,4 @@ Repository đã có `render.yaml`, vì vậy cũng có thể dùng Render Bluepr
 
 Mở `/admin` và đăng nhập bằng giá trị đã đặt cho `ADMIN_PASSWORD`.
 
-## 5. Media cũ
 
-Ảnh/video mới được lưu trong bucket Supabase `journey-media`. Media cũ nằm trong Cloudflare R2 không tự xuất hiện trong Supabase; cần tải chúng xuống từ website cũ rồi tải lại tại trang quản trị mới.
